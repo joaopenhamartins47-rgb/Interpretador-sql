@@ -1,0 +1,5 @@
+Roberto, 3
+Amanda, 2
+Luiz, 1
+Osvaldo, 1
+Bianca, 1

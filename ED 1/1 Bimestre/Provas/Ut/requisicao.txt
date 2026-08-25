@@ -1,0 +1,5 @@
+1, codigo, 2, 6
+2, lendo, 4, 3
+3, jogando, 3, 8
+4, escutando musica, 4, 2
+5, estudando, 1, 10
