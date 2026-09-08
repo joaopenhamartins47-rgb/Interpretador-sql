@@ -273,71 +273,97 @@ void parser_insert(char entrada[], int i, char tabela[], char colunas[10][20], c
         if(col == 0)
         {
             i = pula_espacos(entrada, i);
-            i = pula_from_where(entrada, i); /* pula o INTO */
+            i = pula_from_where(entrada, i); 
             i = pula_espacos(entrada, i);
 
+            j = 0;
+
             while(entrada[i] != ' ' && entrada[i] != '(' && entrada[i] != '\0')
+            {
                 tabela[j++] = entrada[i++];
+            }
+
             tabela[j] = '\0';
 
             i = pula_espacos(entrada, i);
+
             if(entrada[i] == '(')
-                i++; /* pula o '(' */
+                i++; 
 
             j = 0;
+            nc = 0;
             col = 1;
         }
+
         else if(col == 1)
         {
             i = pula_espacos(entrada, i);
 
+            j = 0;
+
             while(entrada[i] != ',' && entrada[i] != ')' && entrada[i] != '\0')
+            {
                 colunas[nc][j++] = entrada[i++];
+            }
+
             colunas[nc][j] = '\0';
             nc++;
 
             if(entrada[i] == ',')
             {
                 i++;
-                j = 0;
             }
             else if(entrada[i] == ')')
             {
-                i++; /* pula o ')' */
+                i++; 
                 col = 2;
             }
         }
+
         else if(col == 2)
         {
             i = pula_espacos(entrada, i);
-            i = pula_from_where(entrada, i); /* pula o VALUES */
+            i = pula_from_where(entrada, i); /* pula VALUES */
             i = pula_espacos(entrada, i);
+
             if(entrada[i] == '(')
-                i++; /* pula o '(' */
+                i++; 
 
             j = 0;
             nc = 0;
             col = 3;
         }
+
         else if(col == 3)
         {
             i = pula_espacos(entrada, i);
 
-            if(entrada[i] == 39)
+            j = 0;
+
+            if(entrada[i] == '\'')
             {
-                i++; /* pula a aspa de abertura */
-                while(entrada[i] != 39 && entrada[i] != '\0')
+                i++;
+
+                while(entrada[i] != '\'' && entrada[i] != '\0')
+                {
                     valores[nc][j++] = entrada[i++];
+                }
+
                 valores[nc][j] = '\0';
+
                 if(entrada[i] == 39)
-                    i++; /* pula a aspa de fechamento */
+                    i++; /* pula aspa de fechamento */
             }
             else
             {
                 while(entrada[i] != ',' && entrada[i] != ')' && entrada[i] != '\0')
+                {
                     valores[nc][j++] = entrada[i++];
+                }
+
                 valores[nc][j] = '\0';
             }
+
             nc++;
 
             i = pula_espacos(entrada, i);
@@ -345,17 +371,14 @@ void parser_insert(char entrada[], int i, char tabela[], char colunas[10][20], c
             if(entrada[i] == ',')
             {
                 i++;
-                j = 0;
             }
             else if(entrada[i] == ')')
             {
+                i++;
                 col = 4;
             }
-            else
-            {
-                j = 0;
-            }
         }
+
         else
         {
             i++;
