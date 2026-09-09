@@ -57,7 +57,7 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 {
     int col = 0;   // 0=colunas 1=pula FROM 2=tabela 3=verifica WHERE 4=le condicao 5=fim 
     int j = 0;
-    char palavra[20];
+    char palavra[50];
     while(entrada[i] != '\0')
     {
         if(col == 0)
@@ -138,9 +138,10 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 
 
 
-void parser_delete(char entrada[], int i, char tabela[], char condicao[])
+void parser_delete(char entrada[], int i, fila **f1, fila **f2)
 {
     int j = 0, col=0;
+    char palavra[50];
     while(entrada[i] != '\0')
     {
         if(col == 0){
@@ -150,9 +151,10 @@ void parser_delete(char entrada[], int i, char tabela[], char condicao[])
             i = pula_espacos(entrada, i);
 
             while(entrada[i] != ' ' && entrada[i] != '\0')
-                tabela[j++] = entrada[i++];
+                palavra[j++] = entrada[i++];
             
-            tabela[j] = '\0';
+            palavra[j] = '\0';
+            enqueue(&*f1, palavra);
             col=1;
         }
         else if(col == 1)
@@ -165,8 +167,9 @@ void parser_delete(char entrada[], int i, char tabela[], char condicao[])
             //Le a condicao
             j=0;
             while(entrada[i] != ';' && entrada[i] != '\0')
-                condicao[j++] = entrada[i++];
-            condicao[j] = '\0';
+                palavra[j++] = entrada[i++];
+            palavra[j] = '\0';
+            enqueue(&*f2, palavra);
             col = 3;
         }
         else
@@ -175,11 +178,11 @@ void parser_delete(char entrada[], int i, char tabela[], char condicao[])
 }
 
 
-void parser_update(char entrada[], int i, char tabela[], char colunas[10][20], char valores[10][20], int *num_atribuicoes, char condicao[50])
+void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila **f4)
 {
     int j = 0, na = 0, col = 0;
-
-    condicao[0] = '\0';
+    char palavra[50];
+    //f1 eh a tabela que sera alterada, f2 sao os campos, f3 os valores e f4 where
 
     while(entrada[i] != '\0')
     {
@@ -187,8 +190,9 @@ void parser_update(char entrada[], int i, char tabela[], char colunas[10][20], c
         {
             i = pula_espacos(entrada, i);
             while(entrada[i] != ' ' && entrada[i] != '\0')
-                tabela[j++] = entrada[i++];
-            tabela[j] = '\0';
+                palavra[j++] = entrada[i++];
+            palavra[j] = '\0';
+            enqueue(&*f1, palavra);
 
             i = pula_espacos(entrada, i);
             i = pula_from_where(entrada, i); /* pula o SET */
@@ -200,8 +204,9 @@ void parser_update(char entrada[], int i, char tabela[], char colunas[10][20], c
         else if(col == 1)
         {
             while(entrada[i] != ' ' && entrada[i] != '=' && entrada[i] != '\0')
-                colunas[na][j++] = entrada[i++];
-            colunas[na][j] = '\0';
+                palavra[j++] = entrada[i++];
+            palavra[j] = '\0';
+            enqueue(&*f2, palavra);
 
             i = pula_espacos(entrada, i);
 
@@ -212,10 +217,9 @@ void parser_update(char entrada[], int i, char tabela[], char colunas[10][20], c
 
             j = 0;
             while(entrada[i] != ' ' && entrada[i] != ',' && entrada[i] != '\0')
-                valores[na][j++] = entrada[i++];
-            valores[na][j] = '\0';
-
-            na++;
+                palavra[j] = entrada[i++];
+            palavra[j] = '\0';
+            enqueue(&*f3, palavra);
 
             if(entrada[i] == ',')
             {
@@ -246,8 +250,9 @@ void parser_update(char entrada[], int i, char tabela[], char colunas[10][20], c
         else if(col == 3)
         {
             while(entrada[i] != ';' && entrada[i] != '\0')
-                condicao[j++] = entrada[i++];
-            condicao[j] = '\0';
+                palavra[j++] = entrada[i++];
+            palavra[j] = '\0';
+            enqueue(&*f4, palavra);
             col = 4;
         }
         else
@@ -255,8 +260,6 @@ void parser_update(char entrada[], int i, char tabela[], char colunas[10][20], c
             i++;
         }
     }
-
-    *num_atribuicoes = na;
 }
 
 
