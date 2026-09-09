@@ -42,6 +42,40 @@ struct pontdb
     db *pbanco;
 };typedef struct pontdb pondb;
 
+struct filap
+{
+    char info[20];
+    struct filap *prox;
+};typedef struct filap fila;
+
+char isEmpty(fila *f)
+{
+    return f == NULL;
+}
+
+void enqueue(fila **f, char *info)
+{
+    fila *novo = (fila*)malloc(sizeof(fila));
+    strcpy(novo->info, info);
+    novo->prox = NULL;
+    if(!*f)
+        *f = novo;
+    else
+    {
+        fila *aux = *f;
+        while(aux->prox != NULL)
+            aux = aux->prox;
+        aux->prox = novo;
+    }
+}
+
+void dequeue(fila **f, char info[])
+{
+    fila *aux = *f;
+    strcpy(info, (*f)->info);
+    *f = (*f)->prox;
+    free(aux);
+}
 
 /*
 Banco_Dados *criar_banco(...);

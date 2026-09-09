@@ -53,37 +53,33 @@ int pula_espacos(char entrada[], int i)
     return i;
 }
 
-void parser_select(char entrada[], int i, char colunas[10][20], int *num_colunas, char tabela[], char condicao[50])
+void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 {
     int col = 0;   // 0=colunas 1=pula FROM 2=tabela 3=verifica WHERE 4=le condicao 5=fim 
-    int nc = 0;
     int j = 0;
-
-    condicao[0] = '\0';   // garante vazio se nao tiver WHERE 
-
+    char palavra[20];
     while(entrada[i] != '\0')
     {
         if(col == 0)
         {
+            j = 0;
             i = pula_espacos(entrada, i);
             while(entrada[i] != ' ' && entrada[i] != ',' && entrada[i] != '\0')
             {
-                colunas[nc][j] = entrada[i];
+                palavra[j] = entrada[i];
                 j++;
                 i++;
             }
-            colunas[nc][j] = '\0';
+            palavra[j] = '\0';
+            enqueue(&*f1, palavra);
 
             if(entrada[i] == ',')
             {
-                nc++;
-                j = 0;
-                i++; //Pula a virgula
+                i++; 
                 i = pula_espacos(entrada, i);
             }
             else if(entrada[i] == ' ')
             {
-                nc++;
                 col = 1;
                 i++;
             }
@@ -100,11 +96,12 @@ void parser_select(char entrada[], int i, char colunas[10][20], int *num_colunas
         {
             while(entrada[i] != ' ' && entrada[i] != ';' && entrada[i] != '\0')
             {
-                tabela[j] = entrada[i];
+                palavra[j] = entrada[i];
                 j++;
                 i++;
             }
-            tabela[j] = '\0';
+            palavra[j] = '\0';
+            enqueue(&*f2, palavra);
             col = 3;
         }
         else if(col == 3)
@@ -126,9 +123,10 @@ void parser_select(char entrada[], int i, char colunas[10][20], int *num_colunas
         else if(col == 4)
         {
             while(entrada[i] != ';' && entrada[i] != '\0')
-                condicao[j++] = entrada[i++];
+                palavra[j++] = entrada[i++];
             
-            condicao[j] = '\0';
+            palavra[j] = '\0';
+            enqueue(&*f3, palavra);
             col = 5;
         }
         else
@@ -136,8 +134,6 @@ void parser_select(char entrada[], int i, char colunas[10][20], int *num_colunas
             i++;
         }
     }
-
-    *num_colunas = nc;
 }
 
 
