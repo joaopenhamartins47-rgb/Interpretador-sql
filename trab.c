@@ -263,9 +263,11 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
 }
 
 
-void parser_insert(char entrada[], int i, char tabela[], char colunas[10][20], char valores[10][20], int *num_colunas)
+void parser_insert(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 {
-    int j = 0, nc = 0, col = 0;
+    int j = 0, col = 0;
+    //f1 vai ser a tabela, f2 as colunas e f3 os valores
+    char palavra[50];
 
     while(entrada[i] != '\0')
     {
@@ -279,10 +281,11 @@ void parser_insert(char entrada[], int i, char tabela[], char colunas[10][20], c
 
             while(entrada[i] != ' ' && entrada[i] != '(' && entrada[i] != '\0')
             {
-                tabela[j++] = entrada[i++];
+                palavra[j++] = entrada[i++];
             }
 
-            tabela[j] = '\0';
+            palavra[j] = '\0';
+            enqueue(&*f1, palavra);
 
             i = pula_espacos(entrada, i);
 
@@ -290,7 +293,6 @@ void parser_insert(char entrada[], int i, char tabela[], char colunas[10][20], c
                 i++; 
 
             j = 0;
-            nc = 0;
             col = 1;
         }
 
@@ -302,11 +304,11 @@ void parser_insert(char entrada[], int i, char tabela[], char colunas[10][20], c
 
             while(entrada[i] != ',' && entrada[i] != ')' && entrada[i] != '\0')
             {
-                colunas[nc][j++] = entrada[i++];
+                palavra[j++] = entrada[i++];
             }
 
-            colunas[nc][j] = '\0';
-            nc++;
+            palavra[j] = '\0';
+            enqueue(&*f2, palavra);
 
             if(entrada[i] == ',')
             {
@@ -329,7 +331,6 @@ void parser_insert(char entrada[], int i, char tabela[], char colunas[10][20], c
                 i++; 
 
             j = 0;
-            nc = 0;
             col = 3;
         }
 
@@ -345,26 +346,25 @@ void parser_insert(char entrada[], int i, char tabela[], char colunas[10][20], c
 
                 while(entrada[i] != '\'' && entrada[i] != '\0')
                 {
-                    valores[nc][j++] = entrada[i++];
+                    palavra[j++] = entrada[i++];
                 }
 
-                valores[nc][j] = '\0';
+                palavra[j] = '\0';
+                enqueue(&*f3, palavra);
 
-                if(entrada[i] == 39)
-                    i++; /* pula aspa de fechamento */
+                if(entrada[i] == 39) //aspas
+                    i++;
             }
             else
             {
                 while(entrada[i] != ',' && entrada[i] != ')' && entrada[i] != '\0')
                 {
-                    valores[nc][j++] = entrada[i++];
+                    palavra[j++] = entrada[i++];
                 }
 
-                valores[nc][j] = '\0';
+                palavra[j] = '\0';
+                enqueue(&*f3, palavra);
             }
-
-            nc++;
-
             i = pula_espacos(entrada, i);
 
             if(entrada[i] == ',')
@@ -384,7 +384,6 @@ void parser_insert(char entrada[], int i, char tabela[], char colunas[10][20], c
         }
     }
 
-    *num_colunas = nc;
 }
 
 
