@@ -403,6 +403,66 @@ inserir_valor_texto(...)
 executar_insert(...) - Funcao pra extrair os dados do parser e realizar a insercao
 */
 
+
+void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
+{
+    char info[20];
+    if(!isEmpty(*f1))
+    {
+        dequeue(&*f1, info);
+        tabela *nt = buscar_tabela(ptab, info);
+        if(nt)
+        {
+            campos *aux = nt->pcampos;
+            while(!isEmpty(*f2) && !isEmpty(*f3))
+            {
+                dequeue(&*f2, info);
+                campos *nc = buscar_campo(aux, info);
+                if(nc)
+                {
+                    if(!isEmpty(*f3))
+                    {
+                        dequeue(&*f3, info);
+                        valorc *novo = criar_valor();
+                        novo->prox = NULL;
+                        if(nc->tipo == 'I')
+                        {
+                            novo->dado.valorI = atoi(info);
+                        }
+                        else if(nc->tipo == 'T')
+                        {
+                            strcpy(novo->dado.valorT, info);
+                        }
+                        else if(nc->tipo == 'D')
+                        {
+                            strcpy(novo->dado.valorD, info);
+                        }
+                        else if(nc->tipo == 'N')
+                        {
+                            novo->dado.valorN = atof(info);
+                        }
+                        else if(nc->tipo == 'C')
+                        {
+                            novo->dado.valorC = info[0];
+                        }
+                        if(!nc->Patual)
+                            nc->Pdados = nc->Patual = novo;
+                        else
+                        {
+                            valorc *aux = nc->Patual;
+                            while(aux->prox != NULL)
+                                aux = aux->prox;
+                            aux->prox = novo;
+                        }
+
+                    }
+                }
+            }
+            
+        }
+    }
+}
+
 /*
 Resumo do que falta:
 SUPORTE
