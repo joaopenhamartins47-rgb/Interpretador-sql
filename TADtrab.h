@@ -465,30 +465,34 @@ void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
 
 /*
 Resumo do que falta:
-SUPORTE
-├── tipo_valido
-├── comparar_valor
-├── alterar_valor
-└── remover_valor
 
 INSERT
 └── executar_insert
+validar FK
+validar PK duplicada
 
-UPDATE
-├── avaliar_condicao
-└── executar_update
+Update
+ executar_update()
+ localizar registros pelo WHERE
+ alterar os valores
+ validar tipo
+ validar FK se o campo alterado for FK
 
 DELETE
-├── avaliar_condicao
-└── executar_delete
+ executar_delete()
+ localizar registro pelo WHERE
+ remover corretamente os nós de Pdados
+ manter os ponteiros consistentes
+ decidir/tratar o que acontece ao tentar excluir um registro referenciado por uma FK
 
-FK
-└── criar_fk
+
 
 SELECT
-├── executar_select
-├── avaliar_where
-├── avaliar_between
-└── executar_join
+ executar_select()
+ SELECT *
+ selecionar colunas específicas
+ WHERE
+ BETWEEN
+ JOIN usando PK/FK
 */
 
