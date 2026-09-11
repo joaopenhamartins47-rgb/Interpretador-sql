@@ -402,63 +402,329 @@ inserir_valor_texto(...)
 /*
 executar_insert(...) - Funcao pra extrair os dados do parser e realizar a insercao
 */
-
-
 void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
 {
     char info[20];
+    tabela *nt;
+    campos *nc;
+    valorc *novo, *aux;
     if(!isEmpty(*f1))
     {
         dequeue(&*f1, info);
-        tabela *nt = buscar_tabela(ptab, info);
+
+        nt = buscar_tabela(ptab, info);
+
         if(nt)
         {
             campos *aux = nt->pcampos;
+
             while(!isEmpty(*f2) && !isEmpty(*f3))
             {
                 dequeue(&*f2, info);
-                campos *nc = buscar_campo(aux, info);
+
+                nc = buscar_campo(aux, info);
+
                 if(nc)
                 {
-                    if(!isEmpty(*f3))
+                    dequeue(&*f3, info);
+
+                    novo = criar_valor();
+                    novo->prox = NULL;
+
+                    if(nc->tipo == 'I')
+                        novo->dado.valorI = atoi(info);
+
+                    else if(nc->tipo == 'T')
+                        strcpy(novo->dado.valorT, info);
+
+                    else if(nc->tipo == 'D')
+                        strcpy(novo->dado.valorD, info);
+
+                    else if(nc->tipo == 'N')
+                        novo->dado.valorN = atof(info);
+
+                    else if(nc->tipo == 'C')
+                        novo->dado.valorC = info[0];
+
+                    if(!nc->Patual)
+                        nc->Pdados = nc->Patual = novo;
+                    else
                     {
-                        dequeue(&*f3, info);
-                        valorc *novo = criar_valor();
-                        novo->prox = NULL;
-                        if(nc->tipo == 'I')
+                        aux = nc->Patual;
+
+                        while(aux->prox != NULL)
+                            aux = aux->prox;
+
+                        aux->prox = novo;
+                    }
+                    
+                }
+            }
+        }
+    }
+}
+
+int buscar_posicao(campos *inicio, char *operador, char *valor)
+{
+    int pos = 0;
+    valorc *aux = inicio->Pdados;
+
+    while(aux)
+    {
+        if(inicio->tipo == 'I')
+        {
+            if(strcmp(operador, "=") == 0 &&
+               aux->dado.valorI == atoi(valor))
+                return pos;
+        }
+        else if(inicio->tipo == 'N')
+        {
+            if(strcmp(operador, "=") == 0 &&
+               aux->dado.valorN == atof(valor))
+                return pos;
+        }
+        else if(inicio->tipo == 'D')
+        {
+            if(strcmp(operador, "=") == 0 &&
+               strcmp(aux->dado.valorD, valor) == 0)
+                return pos;
+        }
+        else if(inicio->tipo == 'T')
+        {
+            if(strcmp(operador, "=") == 0 &&
+               strcmp(aux->dado.valorT, valor) == 0)
+                return pos;
+        }
+        else if(inicio->tipo == 'C')
+        {
+            if(strcmp(operador, "=") == 0 &&
+               aux->dado.valorC == valor[0])
+                return pos;
+        }
+
+        aux = aux->prox;
+        pos++;
+    }
+
+    return -1;
+}
+
+valorc *buscar_valor_posicao(campos *inicio, int pos) //Retorna o valor da posicao encontrada
+{
+    int i = 0;
+    valorc *aux = inicio->Pdados;
+
+    while(aux && i < pos)
+    {
+        aux = aux->prox;
+        i++;
+    }
+
+    return aux;
+}
+
+void parser_where(char *campo, char *operador, char *valor, char *entrada)
+{
+    int i, j =0;
+    char palavra[30];
+    for(i=0; entrada[i] != ' '; i++)
+    {
+        palavra[i] = entrada[i];
+    }
+    palavra[i] = '\0';
+    strcpy(campo, palavra);
+    i++;
+    while(entrada[i] != ' ')
+        palavra[j++] = entrada[i++]; 
+
+    palavra[j] = '\0';
+    strcpy(operador, palavra);
+    i++;
+    j=0;
+    while(entrada[i] != '\0')
+        valor[j++]= entrada[i++];
+    valor[j] = '\0';
+}
+
+int compara_valor(campos *campo, valorc *aux, char *operador, char *valor)
+{
+    int v;
+
+    if(campo->tipo == 'I')
+    {
+        v = atoi(valor);
+
+        if(strcmp(operador, ">") == 0)
+            return aux->dado.valorI > v;
+        else if(strcmp(operador, "<") == 0)
+            return aux->dado.valorI < v;
+        else if(strcmp(operador, ">=") == 0)
+            return aux->dado.valorI >= v;
+        else if(strcmp(operador, "<=") == 0)
+            return aux->dado.valorI <= v;
+        else if(strcmp(operador, "!=") == 0 || strcmp(operador, "<>") == 0)
+            return aux->dado.valorI != v;
+    }
+
+    else if(campo->tipo == 'N')
+    {
+        float v;
+
+        v = atof(valor);
+
+        if(strcmp(operador, ">") == 0)
+            return aux->dado.valorN > v;
+        else if(strcmp(operador, "<") == 0)
+            return aux->dado.valorN < v;
+        else if(strcmp(operador, ">=") == 0)
+            return aux->dado.valorN >= v;
+        else if(strcmp(operador, "<=") == 0)
+            return aux->dado.valorN <= v;
+        else if(strcmp(operador, "!=") == 0 || strcmp(operador, "<>") == 0)
+            return aux->dado.valorN != v;
+    }
+
+    else if(campo->tipo == 'D')
+    {
+        if(strcmp(operador, ">") == 0)
+            return strcmp(aux->dado.valorD, valor) > 0;
+        else if(strcmp(operador, "<") == 0)
+            return strcmp(aux->dado.valorD, valor) < 0;
+        else if(strcmp(operador, ">=") == 0)
+            return strcmp(aux->dado.valorD, valor) >= 0;
+        else if(strcmp(operador, "<=") == 0)
+            return strcmp(aux->dado.valorD, valor) <= 0;
+        else if(strcmp(operador, "!=") == 0 || strcmp(operador, "<>") == 0)
+            return strcmp(aux->dado.valorD, valor) != 0;
+    }
+
+    else if(campo->tipo == 'T')
+    {
+        if(strcmp(operador, ">") == 0)
+            return strcmp(aux->dado.valorT, valor) > 0;
+        else if(strcmp(operador, "<") == 0)
+            return strcmp(aux->dado.valorT, valor) < 0;
+        else if(strcmp(operador, ">=") == 0)
+            return strcmp(aux->dado.valorT, valor) >= 0;
+        else if(strcmp(operador, "<=") == 0)
+            return strcmp(aux->dado.valorT, valor) <= 0;
+        else if(strcmp(operador, "!=") == 0 || strcmp(operador, "<>") == 0)
+            return strcmp(aux->dado.valorT, valor) != 0;
+    }
+
+    else if(campo->tipo == 'C')
+    {
+        if(strcmp(operador, ">") == 0)
+            return aux->dado.valorC > valor[0];
+        else if(strcmp(operador, "<") == 0)
+            return aux->dado.valorC < valor[0];
+        else if(strcmp(operador, ">=") == 0)
+            return aux->dado.valorC >= valor[0];
+        else if(strcmp(operador, "<=") == 0)
+            return aux->dado.valorC <= valor[0];
+        else if(strcmp(operador, "!=") == 0 || strcmp(operador, "<>") == 0)
+            return aux->dado.valorC != valor[0];
+    }
+
+    return 0;
+}
+
+void executar_update(tabela *ptab, fila **f1, fila **f2, fila **f3, fila **f4)
+{
+    char info[50], valor[50];
+    char campo_where[30], operador[5], valor_where[30];
+    tabela *nt;
+    if(!isEmpty(*f1))
+    {
+        dequeue(f1, info);
+
+        nt = buscar_tabela(ptab, info);
+
+        if(nt)
+        {
+            campos *campo_w = NULL;
+
+            if(!isEmpty(*f4))
+            {
+                dequeue(f4, info);
+
+                parser_where(campo_where, operador, valor_where, info);
+
+                campo_w = buscar_campo(nt->pcampos, campo_where);
+            }
+
+            if(campo_w)
+            {
+                while(!isEmpty(*f2) && !isEmpty(*f3))
+                {
+                    dequeue(f2, info);   // coluna a alterar
+                    dequeue(f3, valor);  // valor novo
+
+                    campos *nc = buscar_campo(nt->pcampos, info);
+
+                    if(nc)
+                    {
+                        /* OPERADOR = */
+                        if(strcmp(operador, "=") == 0)
                         {
-                            novo->dado.valorI = atoi(info);
-                        }
-                        else if(nc->tipo == 'T')
-                        {
-                            strcpy(novo->dado.valorT, info);
-                        }
-                        else if(nc->tipo == 'D')
-                        {
-                            strcpy(novo->dado.valorD, info);
-                        }
-                        else if(nc->tipo == 'N')
-                        {
-                            novo->dado.valorN = atof(info);
-                        }
-                        else if(nc->tipo == 'C')
-                        {
-                            novo->dado.valorC = info[0];
-                        }
-                        if(!nc->Patual)
-                            nc->Pdados = nc->Patual = novo;
-                        else
-                        {
-                            valorc *aux = nc->Patual;
-                            while(aux->prox != NULL)
-                                aux = aux->prox;
-                            aux->prox = novo;
+                            int pos = buscar_posicao(campo_w, operador, valor_where);
+
+                            if(pos != -1)
+                            {
+                                valorc *alvo = buscar_valor_posicao(nc, pos);
+
+                                if(alvo)
+                                {
+                                    if(nc->tipo == 'I')
+                                        alvo->dado.valorI = atoi(valor);
+
+                                    else if(nc->tipo == 'N')
+                                        alvo->dado.valorN = atof(valor);
+
+                                    else if(nc->tipo == 'D')
+                                        strcpy(alvo->dado.valorD, valor);
+
+                                    else if(nc->tipo == 'T')
+                                        strcpy(alvo->dado.valorT, valor);
+
+                                    else if(nc->tipo == 'C')
+                                        alvo->dado.valorC = valor[0];
+                                }
+                            }
                         }
 
+                        else
+                        {
+                            valorc *aux_w = campo_w->Pdados;
+                            valorc *aux_nc = nc->Pdados;
+
+                            while(aux_w && aux_nc)
+                            {
+                                if(compara_valor(campo_w, aux_w, operador, valor_where))
+                                {
+                                    if(nc->tipo == 'I')
+                                        aux_nc->dado.valorI = atoi(valor);
+
+                                    else if(nc->tipo == 'N')
+                                        aux_nc->dado.valorN = atof(valor);
+
+                                    else if(nc->tipo == 'D')
+                                        strcpy(aux_nc->dado.valorD, valor);
+
+                                    else if(nc->tipo == 'T')
+                                        strcpy(aux_nc->dado.valorT, valor);
+
+                                    else if(nc->tipo == 'C')
+                                        aux_nc->dado.valorC = valor[0];
+                                }
+
+                                aux_w = aux_w->prox;
+                                aux_nc = aux_nc->prox;
+                            }
+                        }
                     }
                 }
             }
-            
         }
     }
 }
@@ -478,6 +744,25 @@ Update
  validar tipo
  validar FK se o campo alterado for FK
 
+
+
+*/
+/*
+f1 → usuarios
+
+f2 → nome → idade
+
+f3 → Maria Silva → 30
+
+f4 → id_usuario = 1
+*/
+
+
+
+
+
+
+/*
 DELETE
  executar_delete()
  localizar registro pelo WHERE

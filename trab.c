@@ -217,7 +217,7 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
 
             j = 0;
             while(entrada[i] != ' ' && entrada[i] != ',' && entrada[i] != '\0')
-                palavra[j] = entrada[i++];
+                palavra[j++] = entrada[i++];
             palavra[j] = '\0';
             enqueue(&*f3, palavra);
 
