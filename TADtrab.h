@@ -384,20 +384,6 @@ remover_valor(...)
 alterar_valor(...)
 */
 
-/*
-Conferir os Parsers dos comandos sql ex: INSERT INTO cliente (id_cliente, nome) VALUES (1, 'Joao');
-
-Se torna:
-buscar_tabela("cliente")
-        ↓
-buscar_campo("id_cliente")
-        ↓
-inserir_valor_int(...)
-
-buscar_campo("nome")
-        ↓
-inserir_valor_texto(...)
-*/
 
 /*
 executar_insert(...) - Funcao pra extrair os dados do parser e realizar a insercao
@@ -771,7 +757,146 @@ DELETE
  decidir/tratar o que acontece ao tentar excluir um registro referenciado por uma FK
 
 
+*/
+void remover_outros_campos(tabela *nt, campos *campo_w, valorc *valor_w) //O aux_w anda ate achar o valor correspondente a linha, pra apagar tudo
+{
+    campos *campo;
+    valorc *aux_w;
+    valorc *aux;
 
+    campo = nt->pcampos;
+
+    while(campo)
+    {
+        if(campo != campo_w) //Para nao apagar de cara o do campo do where
+        {
+            aux_w = campo_w->Pdados;
+            aux = campo->Pdados;
+
+            while(aux_w && aux && aux_w != valor_w)
+            {
+                aux_w = aux_w->prox;
+                aux = aux->prox;
+            }
+
+            if(aux)
+                remover_valor_campo(campo, aux);
+        }
+
+        campo = campo->prox;
+    }
+}
+
+void remover_valor_campo(campos *campo, valorc *valor)
+{
+    valorc *aux;
+    valorc *ant;
+
+    aux = campo->Pdados;
+    ant = NULL;
+
+    while(aux && aux != valor)
+    {
+        ant = aux;
+        aux = aux->prox;
+    }
+
+    if(aux)
+    {
+        if(ant == NULL)
+            campo->Pdados = aux->prox;
+        else
+            ant->prox = aux->prox;
+
+        free(aux);
+    }
+}
+
+int valor_igual(campos *campo, valorc *aux, char *valor)
+{
+    if(campo->tipo == 'I')
+        return aux->dado.valorI == atoi(valor);
+
+    else if(campo->tipo == 'N')
+        return aux->dado.valorN == atof(valor);
+
+    else if(campo->tipo == 'D')
+        return strcmp(aux->dado.valorD, valor) == 0;
+
+    else if(campo->tipo == 'T')
+        return strcmp(aux->dado.valorT, valor) == 0;
+
+    else if(campo->tipo == 'C')
+        return aux->dado.valorC == valor[0];
+
+    return 0;
+}
+
+void executar_delete(tabela *ptabela, fila **f1, fila **f2)
+{
+    tabela *nt;
+    campos *campo_w, *campo;
+    valorc *aux_w, *ant_w, *proximo, *aux, *ant;
+
+    char nome_tabela[30], campo_where[30], operador[5], valor[30], where[40];
+
+    nt = campo_w = campo = aux_w = ant_w = proximo = aux = ant = NULL;
+    
+
+    if(!isEmpty(*f1))
+    {
+        dequeue(f1, nome_tabela);
+
+        nt = buscar_tabela(ptabela, nome_tabela);
+
+        if(nt)
+        {
+            if(!isEmpty(*f2))
+            {
+                dequeue(f2, where);
+
+                parser_where(campo_where, operador, valor, where);
+
+                campo_w = buscar_campo(nt->pcampos, campo_where);
+            }
+
+            if(campo_w)
+            {
+                aux_w = campo_w->Pdados;
+
+                while(aux_w)
+                {
+                    proximo = aux_w->prox;
+
+                    if(strcmp(operador, "=") == 0)
+                    {
+                        if(valor_igual(campo_w, aux_w, valor))
+                        {
+                            remover_outros_campos(nt, campo_w, aux_w);
+
+                            remover_valor_campo(campo_w, aux_w);
+                        }
+                    }
+                    else
+                    {
+                        if(compara_valor(campo_w, aux_w, operador, valor))
+                        {
+                            remover_outros_campos(nt, campo_w, aux_w);
+
+                            remover_valor_campo(campo_w, aux_w);
+                        }
+                    }
+
+                    aux_w = proximo;
+                }
+            }
+        }
+    }
+}
+
+
+
+/*
 SELECT
  executar_select()
  SELECT *
@@ -780,4 +905,5 @@ SELECT
  BETWEEN
  JOIN usando PK/FK
 */
+
 
