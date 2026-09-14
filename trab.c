@@ -39,6 +39,11 @@ char isALTER(char comando[])
     return !strcmp(comando, "ALTER") || !strcmp(comando, "alter");
 }
 
+char isInsert(char comando[])
+{
+    return !strcmp(comando, "INSERT") || !strcmp(comando, "insert");
+}
+
 int pula_from_where(char entrada[], int i)
 {
     while(entrada[i] != ' ' && entrada[i] != '\0')
@@ -386,35 +391,82 @@ void parser_insert(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 
 }
 
-
+char isCreateDatabase(char entrada[], int *i)
+{
+    *i = pula_espacos(entrada, *i);
+    if(entrada[*i] == 'D' || entrada[*i] == 'd')
+        return 1;
+    return 0;
+}
 
 int main(void)
 {
     int i;
     char comando[30];
-    char tabela[20];
-    char condicao[50];
     char entrada[100];
+    fila *f1, *f2, *f3, *f4;
+    pondb *pdb;
+    inicializa_ponteiro_banco(&pdb);
+    init(&f1);
+    init(&f2);
+    init(&f3);
+    init(&f4);
+    gets(entrada);
+    while(strcmp(entrada, "\0") != 0)
+    {
+        i = parser_comando(entrada, comando);
+        if(isCREATE(comando))
+        {
+            i = pula_espacos(entrada, i);
 
-    strcpy(entrada, "DELETE FROM cliente WHERE id_cliente = 1;");
+            if(isCreateDatabase(entrada, &i))
+            {
+                /*
+                    Aqui entra a parte que vai extrair
+                    o nome do banco do comando.
+                */
+                criar_banco(&pdb, "banco_de_dados"); //Aqui vai entrar a parte do create database pra extrair os dados do script sql, entao acho q seria uma variavel
+            }
+            else
+            {  
+                /*
+                    Aqui entra a parte que vai extrair
+                    o nome da tabela e os campos.
+                */
+                inserir_tabela(pdb->pbanco->ptabelas, "nome_tabela");
+            }
+        }
+        else if(isALTER(comando))
+        {
+            /*
+                ALTER TABLE
+                Aqui entra a função que vai
+                criar o relacionamento FK.
+            */
+        }
+        else if(isSELECT(comando))
+        {
+            parser_select(entrada, i, &f1, &f2, &f3);
+            executar_select(pdb->pbanco->ptabelas, &f1, &f2, &f3);
+        }
+        else if(isInsert(comando))
+        {
+            parser_insert(entrada, i, &f1, &f2, &f3);
+            executar_insert(pdb->pbanco->ptabelas, &f1, &f2, &f3);
+        }
+        else if(isUPDATE(comando))
+        {
+            parser_update(entrada, i, &f1, &f2, &f3, &f4);
 
-    i = parser_comando(entrada, comando);
-    printf("Comando: %s\n", comando);
-
-    parser_delete(entrada, i, tabela, condicao);
-    printf("Tabela: %s\n", tabela);
-    printf("Condicao: %s\n", condicao);
-
-    printf("\n---\n\n");
-
-    strcpy(entrada, "DELETE FROM aluguel WHERE valor_pago = 0.00;");
-
-    i = parser_comando(entrada, comando);
-    printf("Comando: %s\n", comando);
-
-    parser_delete(entrada, i, tabela, condicao);
-    printf("Tabela: %s\n", tabela);
-    printf("Condicao: %s\n", condicao);
+            executar_update(pdb->pbanco->ptabelas, &f1,&f2,&f3,&f4);
+        }
+        else if(isDELETE(comando))
+        {
+            parser_delete(entrada, i, &f1, &f2);
+            executar_delete(pdb->pbanco->ptabelas,&f1, &f2);
+        }
+    }
+    
 
     return 0;
 }

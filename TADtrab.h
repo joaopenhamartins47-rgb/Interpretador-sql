@@ -77,6 +77,11 @@ void dequeue(fila **f, char info[])
     free(aux);
 }
 
+void init(fila **f)
+{
+    *f = NULL;
+}
+
 /*
 Banco_Dados *criar_banco(...);
 tabela *criar_tabela(...);
@@ -894,6 +899,65 @@ void executar_delete(tabela *ptabela, fila **f1, fila **f2)
     }
 }
 
+/*f1 → colunas que o usuário pediu
+f2 → tabela do FROM
+f3 → condição do WHERE
+*/
+void executar_select(tabela *ptab, fila **f1, fila **f2, fila **f3)
+{
+    char info[30];
+    tabela *nt;
+
+    if(!isEmpty(*f2))
+    {
+        dequeue(f2, info);
+
+        nt = buscar_tabela(ptab, info);
+
+        if(nt)
+        {
+            if(!isEmpty(*f1))
+            {
+                dequeue(f1, info);
+
+                if(strcmp(info, "*") == 0)
+                {
+                    printf("Tabela: %s\n", nt->nome_tabela);
+                    campos *aux = nt->pcampos;
+                    while(aux)
+                    {
+                        valorc *aux_v = aux->Pdados;
+                        printf("Campo: %s |\t Tipo: %c |\t PK: %c |\t", aux->campo, aux->tipo, aux->pk);
+                        while(aux_v)
+                        {
+                            if(aux->tipo == 'I')
+                                printf("| %d ", aux_v->dado.valorI);
+
+                            else if(aux->tipo == 'N')
+                                printf("| %.2f ", aux_v->dado.valorN);
+
+                            else if(aux->tipo == 'D')
+                                printf("| %s ", aux_v->dado.valorD);
+
+                            else if(aux->tipo == 'T')
+                                printf("| %s ", aux_v->dado.valorT);
+
+                            else if(aux->tipo == 'C')
+                                printf("| %c ", aux_v->dado.valorC);
+                            aux_v = aux_v->prox;
+                        }
+                        printf("|\n");
+                        aux = aux->prox;
+                    }
+                }
+                else
+                {
+                    // SELECT de colunas específicas
+                }
+            }
+        }
+    }
+}
 
 
 /*
