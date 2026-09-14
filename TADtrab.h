@@ -906,6 +906,10 @@ f3 → condição do WHERE
 void executar_select(tabela *ptab, fila **f1, fila **f2, fila **f3)
 {
     char info[30];
+    char campo_where[30];
+    char operador[5];
+    char valor_where[30];
+
     tabela *nt;
 
     if(!isEmpty(*f2))
@@ -916,43 +920,218 @@ void executar_select(tabela *ptab, fila **f1, fila **f2, fila **f3)
 
         if(nt)
         {
-            if(!isEmpty(*f1))
+            //Verifica se existe where
+            campos *campo_w = NULL;
+
+            if(!isEmpty(*f3))
+            {
+                dequeue(f3, info);
+
+                parser_where(campo_where, operador, valor_where, info);
+
+                campo_w = buscar_campo(nt->pcampos, campo_where);
+            }
+
+            while(!isEmpty(*f1))
             {
                 dequeue(f1, info);
 
                 if(strcmp(info, "*") == 0)
                 {
                     printf("Tabela: %s\n", nt->nome_tabela);
+
                     campos *aux = nt->pcampos;
+
                     while(aux)
                     {
-                        valorc *aux_v = aux->Pdados;
-                        printf("Campo: %s |\t Tipo: %c |\t PK: %c |\t", aux->campo, aux->tipo, aux->pk);
-                        while(aux_v)
+                        printf("Campo: %s |\t Tipo: %c |\t PK: %c |\t",
+                               aux->campo, aux->tipo, aux->pk);
+
+                        //Sem where
+                        if(campo_w == NULL)
                         {
-                            if(aux->tipo == 'I')
-                                printf("| %d ", aux_v->dado.valorI);
+                            valorc *aux_v = aux->Pdados;
 
-                            else if(aux->tipo == 'N')
-                                printf("| %.2f ", aux_v->dado.valorN);
+                            while(aux_v)
+                            {
+                                if(aux->tipo == 'I')
+                                    printf("| %d ", aux_v->dado.valorI);
 
-                            else if(aux->tipo == 'D')
-                                printf("| %s ", aux_v->dado.valorD);
+                                else if(aux->tipo == 'N')
+                                    printf("| %.2f ", aux_v->dado.valorN);
 
-                            else if(aux->tipo == 'T')
-                                printf("| %s ", aux_v->dado.valorT);
+                                else if(aux->tipo == 'D')
+                                    printf("| %s ", aux_v->dado.valorD);
 
-                            else if(aux->tipo == 'C')
-                                printf("| %c ", aux_v->dado.valorC);
-                            aux_v = aux_v->prox;
+                                else if(aux->tipo == 'T')
+                                    printf("| %s ", aux_v->dado.valorT);
+
+                                else if(aux->tipo == 'C')
+                                    printf("| %c ", aux_v->dado.valorC);
+
+                                aux_v = aux_v->prox;
+                            }
                         }
+
+                        //Com where
+                        else
+                        {
+                            valorc *aux_w = campo_w->Pdados;
+                            valorc *aux_v = aux->Pdados;
+
+                            while(aux_w && aux_v)
+                            {
+                                if(strcmp(operador, "=") == 0)
+                                {
+                                    if(valor_igual(campo_w, aux_w, valor_where))
+                                    {
+                                        if(aux->tipo == 'I')
+                                            printf("| %d ", aux_v->dado.valorI);
+
+                                        else if(aux->tipo == 'N')
+                                            printf("| %.2f ", aux_v->dado.valorN);
+
+                                        else if(aux->tipo == 'D')
+                                            printf("| %s ", aux_v->dado.valorD);
+
+                                        else if(aux->tipo == 'T')
+                                            printf("| %s ", aux_v->dado.valorT);
+
+                                        else if(aux->tipo == 'C')
+                                            printf("| %c ", aux_v->dado.valorC);
+                                    }
+                                }
+                                else
+                                {
+                                    if(compara_valor(campo_w, aux_w, operador, valor_where))
+                                    {
+                                        if(aux->tipo == 'I')
+                                            printf("| %d ", aux_v->dado.valorI);
+
+                                        else if(aux->tipo == 'N')
+                                            printf("| %.2f ", aux_v->dado.valorN);
+
+                                        else if(aux->tipo == 'D')
+                                            printf("| %s ", aux_v->dado.valorD);
+
+                                        else if(aux->tipo == 'T')
+                                            printf("| %s ", aux_v->dado.valorT);
+
+                                        else if(aux->tipo == 'C')
+                                            printf("| %c ", aux_v->dado.valorC);
+                                    }
+                                }
+
+                                aux_w = aux_w->prox;
+                                aux_v = aux_v->prox;
+                            }
+                        }
+
                         printf("|\n");
+
                         aux = aux->prox;
                     }
                 }
+
+                /*
+                SELECT campos específicos
+                */
                 else
                 {
-                    // SELECT de colunas específicas
+                    campos *aux = buscar_campo(nt->pcampos, info);
+
+                    if(aux)
+                    {
+                        printf("Tabela: %s\n", nt->nome_tabela);
+                        printf("Campo: %s |\t Tipo: %c |\t PK: %c |\t",
+                               aux->campo, aux->tipo, aux->pk);
+
+                        /*
+                         * SEM WHERE
+                         */
+                        if(campo_w == NULL)
+                        {
+                            valorc *aux_v = aux->Pdados;
+
+                            while(aux_v)
+                            {
+                                if(aux->tipo == 'I')
+                                    printf("| %d ", aux_v->dado.valorI);
+
+                                else if(aux->tipo == 'N')
+                                    printf("| %.2f ", aux_v->dado.valorN);
+
+                                else if(aux->tipo == 'D')
+                                    printf("| %s ", aux_v->dado.valorD);
+
+                                else if(aux->tipo == 'T')
+                                    printf("| %s ", aux_v->dado.valorT);
+
+                                else if(aux->tipo == 'C')
+                                    printf("| %c ", aux_v->dado.valorC);
+
+                                aux_v = aux_v->prox;
+                            }
+                        }
+
+                        /*
+                         * COM WHERE
+                         */
+                        else
+                        {
+                            valorc *aux_w = campo_w->Pdados;
+                            valorc *aux_v = aux->Pdados;
+
+                            while(aux_w && aux_v)
+                            {
+                                if(strcmp(operador, "=") == 0)
+                                {
+                                    if(valor_igual(campo_w, aux_w, valor_where))
+                                    {
+                                        if(aux->tipo == 'I')
+                                            printf("| %d ", aux_v->dado.valorI);
+
+                                        else if(aux->tipo == 'N')
+                                            printf("| %.2f ", aux_v->dado.valorN);
+
+                                        else if(aux->tipo == 'D')
+                                            printf("| %s ", aux_v->dado.valorD);
+
+                                        else if(aux->tipo == 'T')
+                                            printf("| %s ", aux_v->dado.valorT);
+
+                                        else if(aux->tipo == 'C')
+                                            printf("| %c ", aux_v->dado.valorC);
+                                    }
+                                }
+                                else
+                                {
+                                    if(compara_valor(campo_w, aux_w, operador, valor_where))
+                                    {
+                                        if(aux->tipo == 'I')
+                                            printf("| %d ", aux_v->dado.valorI);
+
+                                        else if(aux->tipo == 'N')
+                                            printf("| %.2f ", aux_v->dado.valorN);
+
+                                        else if(aux->tipo == 'D')
+                                            printf("| %s ", aux_v->dado.valorD);
+
+                                        else if(aux->tipo == 'T')
+                                            printf("| %s ", aux_v->dado.valorT);
+
+                                        else if(aux->tipo == 'C')
+                                            printf("| %c ", aux_v->dado.valorC);
+                                    }
+                                }
+
+                                aux_w = aux_w->prox;
+                                aux_v = aux_v->prox;
+                            }
+                        }
+
+                        printf("|\n");
+                    }
                 }
             }
         }
@@ -961,13 +1140,35 @@ void executar_select(tabela *ptab, fila **f1, fila **f2, fila **f3)
 
 
 /*
+O que falta e oq ja esta feito
 SELECT
- executar_select()
- SELECT *
- selecionar colunas específicas
- WHERE
- BETWEEN
- JOIN usando PK/FK
+├── SELECT *                  ✅
+├── SELECT campos específicos ✅
+├── WHERE com operadores      ✅
+├── BETWEEN                   ❌
+└── JOIN                      ❌
+
+DML
+├── INSERT                    ✅
+├── UPDATE                    ✅
+└── DELETE                    ✅
+
+MAIN
+└── integrar tudo              🔄
+
+TESTES
+└── testar todos os comandos  🔄
+
+
+CREATE DATABASE       🔄
+CREATE TABLE           🔄
+ALTER TABLE / FK       ❌
+PK duplicada           ❌
+FK no INSERT           ❌
+FK no UPDATE           ❌
+FK no DELETE           ❌
+
+Organizar o TAD e o int main
 */
 
 
