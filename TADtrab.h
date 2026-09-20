@@ -460,18 +460,21 @@ char verificar_fk(campos *campo, char valor[])
 
 char buscar_valor_fila(fila *f2, fila *f3, char nome_campo[], char valor[])
 {
+    int achou=0;
     while(f2 && f3)
     {
         if(strcmp(f2->info, nome_campo) == 0)
         {
             strcpy(valor, f3->info);
-            return 1;
+            achou=1;
         }
 
         f2 = f2->prox;
         f3 = f3->prox;
     }
 
+    if(achou)
+        return 1;
     return 0;
 }
 
