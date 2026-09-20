@@ -60,84 +60,197 @@ int pula_espacos(char entrada[], int i)
 
 void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 {
-    int col = 0;   // 0=colunas 1=pula FROM 2=tabela 3=verifica WHERE 4=le condicao 5=fim 
-    int j = 0;
+    int col = 0, j = 0, k;
     char palavra[50];
+    char campo[50], operador[20], valor1[50], valor2[50];
+    char condicao[100];
+
     while(entrada[i] != '\0')
     {
+        /*
+         * COLUNAS DO SELECT
+         */
         if(col == 0)
         {
             j = 0;
             i = pula_espacos(entrada, i);
-            while(entrada[i] != ' ' && entrada[i] != ',' && entrada[i] != '\0')
+
+            while(entrada[i] != ' ' &&
+                  entrada[i] != ',' &&
+                  entrada[i] != '\0')
             {
-                palavra[j] = entrada[i];
-                j++;
-                i++;
+                palavra[j++] = entrada[i++];
             }
+
             palavra[j] = '\0';
-            enqueue(&*f1, palavra);
+            enqueue(f1, palavra);
 
             if(entrada[i] == ',')
             {
-                i++; 
-                i = pula_espacos(entrada, i);
-            }
-            else if(entrada[i] == ' ')
-            {
-                col = 1;
                 i++;
-            }
-        }
-        else if(col == 1)
-        {
-            i = pula_espacos(entrada, i);
-            i = pula_from_where(entrada, i);   
-            i = pula_espacos(entrada, i);
-            col = 2;
-            j = 0;
-        }
-        else if(col == 2)
-        {
-            while(entrada[i] != ' ' && entrada[i] != ';' && entrada[i] != '\0')
-            {
-                palavra[j] = entrada[i];
-                j++;
-                i++;
-            }
-            palavra[j] = '\0';
-            enqueue(&*f2, palavra);
-            col = 3;
-        }
-        else if(col == 3)
-        {
-            i = pula_espacos(entrada, i);
-
-            if(entrada[i] == 'W' || entrada[i] == 'w')
-            {
-                i = pula_from_where(entrada, i); 
                 i = pula_espacos(entrada, i);
-                j = 0;
-                col = 4;
             }
             else
             {
-                col = 5;
+                i = pula_espacos(entrada, i);
+                col = 1;
             }
         }
+
+        /*
+         * PULA O FROM
+         */
+        else if(col == 1)
+        {
+            i = pula_espacos(entrada, i);
+            i = pula_from_where(entrada, i);
+            i = pula_espacos(entrada, i);
+
+            col = 2;
+        }
+
+        /*
+         * TABELAS DO FROM
+         */
+        else if(col == 2)
+        {
+            j = 0;
+
+            while(entrada[i] != ' ' &&
+                  entrada[i] != ',' &&
+                  entrada[i] != ';' &&
+                  entrada[i] != '\0')
+            {
+                palavra[j++] = entrada[i++];
+            }
+
+            palavra[j] = '\0';
+            enqueue(f2, palavra);
+
+            i = pula_espacos(entrada, i);
+
+            /*
+             * Tem outra tabela
+             */
+            if(entrada[i] == ',')
+            {
+                i++;
+                i = pula_espacos(entrada, i);
+            }
+
+            /*
+             * Terminou o FROM e tem WHERE
+             */
+            else if(entrada[i] == 'W' || entrada[i] == 'w')
+            {
+                i = pula_from_where(entrada, i);
+                i = pula_espacos(entrada, i);
+                col = 4;
+            }
+
+            else
+                col = 5;
+        }
+
+        /*
+         * WHERE
+         */
         else if(col == 4)
         {
-            while(entrada[i] != ';' && entrada[i] != '\0')
-                palavra[j++] = entrada[i++];
+            j = 0;
+            k = 0;
+
+            /*
+             * Campo
+             */
+            ler_palavra(entrada, &i, campo);
+
+            while(campo[j] != '\0')
+                condicao[k++] = campo[j++];
+
+            condicao[k++] = ' ';
+
+            /*
+             * Operador
+             */
+            j = 0;
+            ler_palavra(entrada, &i, operador);
+
+            while(operador[j] != '\0')
+                condicao[k++] = operador[j++];
+
+            /*
+             * BETWEEN
+             */
+            if(strcmp(operador, "BETWEEN") == 0 ||
+               strcmp(operador, "between") == 0)
+            {
+                condicao[k++] = ' ';
+
+                j = 0;
+                ler_palavra(entrada, &i, valor1);
+
+                while(valor1[j] != '\0')
+                    condicao[k++] = valor1[j++];
+
+                condicao[k++] = ' ';
+
+                j = 0;
+                ler_palavra(entrada, &i, palavra);
+
+                while(palavra[j] != '\0')
+                    condicao[k++] = palavra[j++];
+
+                condicao[k++] = ' ';
+
+                j = 0;
+                ler_palavra(entrada, &i, valor2);
+
+                while(valor2[j] != '\0')
+                    condicao[k++] = valor2[j++];
+
+                condicao[k] = '\0';
+            }
+
             
-            palavra[j] = '\0';
-            enqueue(&*f3, palavra);
-            col = 5;
+            else
+            {
+                condicao[k++] = ' ';
+
+                j = 0;
+                ler_palavra(entrada, &i, valor1);
+
+                while(valor1[j] != '\0')
+                    condicao[k++] = valor1[j++];
+
+                condicao[k] = '\0';
+            }
+
+            
+            enqueue(f3, condicao);
+
+            i = pula_espacos(entrada, i);
+
+            /*
+             * Verifica se existe outro AND
+             */
+            if(entrada[i] != '\0' && entrada[i] != ';')
+            {
+                ler_palavra(entrada, &i, palavra);
+
+                if(strcmp(palavra, "AND") == 0 || strcmp(palavra, "and") == 0)
+                {
+                    col = 4;
+                }
+                else
+                    col = 5;
+            }
+            else
+                col = 5;
         }
+
         else
-        {
             i++;
-        }
     }
 }
 
@@ -433,7 +546,7 @@ int main(void)
                     Aqui entra a parte que vai extrair
                     o nome da tabela e os campos.
                 */
-                inserir_tabela(pdb->pbanco->ptabelas, "nome_tabela");
+                inserir_tabela(&pdb->pbanco->ptabelas, "nome_tabela");
             }
         }
         else if(isALTER(comando))
@@ -447,7 +560,7 @@ int main(void)
         else if(isSELECT(comando))
         {
             parser_select(entrada, i, &f1, &f2, &f3);
-            executar_select(pdb->pbanco->ptabelas, &f1, &f2, &f3);
+            executar_select(pdb->pbanco->ptabelas, f1, f2, f3);
         }
         else if(isInsert(comando))
         {
