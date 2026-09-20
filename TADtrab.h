@@ -48,11 +48,7 @@ struct filap
     struct filap *prox;
 };typedef struct filap fila;
 
-void pula_from_where(char entrada[], int *i);
-void pula_espacos(char entrada[], int *i);
-void ler_palavra(char entrada[], int *i, char palavra[]);
-int verifica_where(campos *campo_w, valorc *valor_w, char entrada[]);
-void remover_valor_campo(campos *campo, valorc *valor);
+
 
 char isEmpty(fila *f)
 {
@@ -108,12 +104,7 @@ void limpar_filas(fila **f1, fila **f2, fila **f3, fila **f4)
     limpar_fila(f4);
 }
 
-/*
-Banco_Dados *criar_banco(...);
-tabela *criar_tabela(...);
-campos *criar_campo(...);
-valor *criar_valor(...);
-*/
+
 
 void inicializa_ponteiro_banco(pondb **inicio)
 {
@@ -168,11 +159,7 @@ valorc *criar_valor(void)
 
 
 
-/*
-void inserir_tabela(...);
-void inserir_campo(...);
-void inserir_valor(...);
-*/
+
 
 tabela *inserir_tabela(tabela **inicio, char *nome)
 {
@@ -409,45 +396,188 @@ void imprimir_valores(campos *inicio)
 /*
 executar_insert(...) - Funcao pra extrair os dados do parser e realizar a insercao
 */
+int contar_pk(campos *inicio)
+{
+    int qtd = 0;
+
+    while(inicio)
+    {
+        if(inicio->pk == 'S')
+            qtd++;
+
+        inicio = inicio->prox;
+    }
+
+    return qtd;
+}
+
 char verificar_pk(campos *campo, char valor[])
 {
     valorc *aux;
-    int achou=0;
+    int achou = 0;
+
     aux = campo->Pdados;
 
     while(aux && !achou)
     {
         if(valor_igual(campo, aux, valor))
-            achou=1;
+            achou = 1;
 
         aux = aux->prox;
     }
+
     if(achou)
         return 0;
+
     return 1;
 }
 
 char verificar_fk(campos *campo, char valor[])
 {
     valorc *aux;
-    int achou=0;
+    int achou = 0;
+
     if(campo->fk == NULL)
         achou = 1;
     else
     {
         aux = campo->fk->Pdados;
 
-        while(aux)
+        while(aux && !achou)
         {
             if(valor_igual(campo->fk, aux, valor))
-                achou=1;
+                achou = 1;
 
             aux = aux->prox;
         }
     }
+
     if(achou)
         return 1;
+
     return 0;
+}
+
+char buscar_valor_fila(fila *f2, fila *f3, char nome_campo[], char valor[])
+{
+    while(f2 && f3)
+    {
+        if(strcmp(f2->info, nome_campo) == 0)
+        {
+            strcpy(valor, f3->info);
+            return 1;
+        }
+
+        f2 = f2->prox;
+        f3 = f3->prox;
+    }
+
+    return 0;
+}
+
+char verificar_pk_composta(tabela *nt, fila *f2, fila *f3)
+{
+    campos *campo;
+    valorc *linha;
+    valorc *valor_linha;
+    char valor_insert[50];
+    char igual;
+
+    linha = nt->pcampos->Pdados;
+
+    while(linha)
+    {
+        campo = nt->pcampos;
+        igual = 1;
+
+        while(campo && igual)
+        {
+            if(campo->pk == 'S')
+            {
+                if(!buscar_valor_fila(f2, f3, campo->campo, valor_insert))
+                    igual = 0;
+                else
+                {
+                    valor_linha = buscar_valor_linha(campo, nt->pcampos, linha);
+
+                    if(!valor_linha || !valor_igual(campo, valor_linha, valor_insert))
+                        igual = 0;
+                }
+            }
+
+            campo = campo->prox;
+        }
+
+        if(igual)
+            return 0;
+
+        linha = linha->prox;
+    }
+
+    return 1;
+}
+
+char verificar_pk_update_composta(tabela *nt, valorc *linha_atual, campos *campo_alterado, char valor[])
+{
+    campos *campo;
+    valorc *linha;
+    valorc *valor_linha;
+    char valor_comparacao[50];
+    char igual;
+
+    linha = nt->pcampos->Pdados;
+
+    while(linha)
+    {
+        if(linha != linha_atual)
+        {
+            campo = nt->pcampos;
+            igual = 1;
+
+            while(campo && igual)
+            {
+                if(campo->pk == 'S')
+                {
+                    valor_linha = buscar_valor_linha(campo, nt->pcampos, linha);
+
+                    if(campo == campo_alterado)
+                        strcpy(valor_comparacao, valor);
+                    else
+                    {
+                        valor_comparacao[0] = '\0';
+                        if(valor_linha)
+                        {
+                            if(campo->tipo == 'I')
+                                sprintf(valor_comparacao, "%d", valor_linha->dado.valorI);
+                            else if(campo->tipo == 'N')
+                                sprintf(valor_comparacao, "%f", valor_linha->dado.valorN);
+                            else if(campo->tipo == 'D')
+                                strcpy(valor_comparacao, valor_linha->dado.valorD);
+                            else if(campo->tipo == 'T')
+                                strcpy(valor_comparacao, valor_linha->dado.valorT);
+                            else if(campo->tipo == 'C')
+                                valor_comparacao[0] = valor_linha->dado.valorC,
+                                valor_comparacao[1] = '\0';
+                        }
+                    }
+
+                    if(!valor_linha || !valor_igual(campo,
+                                                    valor_linha,
+                                                    valor_comparacao))
+                        igual = 0;
+                }
+
+                campo = campo->prox;
+            }
+
+            if(igual)
+                return 0;
+        }
+
+        linha = linha->prox;
+    }
+
+    return 1;
 }
 
 void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
@@ -457,12 +587,12 @@ void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
     campos *nc;
     valorc *novo, *aux;
     fila *aux2, *aux3;
-    int valido=1;
-
+    int valido = 1;
+    int qtd_pk;
 
     if(!isEmpty(*f1))
     {
-        dequeue(&*f1, info);
+        dequeue(f1, info);
 
         nt = buscar_tabela(ptab, info);
 
@@ -479,13 +609,21 @@ void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
 
                 if(nc)
                 {
-                    if(nc->pk == 'S' && !verificar_pk(nc, aux3->info))
-                    {
-                        printf("Erro: valor de PK ja existe!\n");
-                        valido = 0;
-                    }
+                    aux = NULL;
+                    qtd_pk = contar_pk(coluna);
 
-                    else if(!verificar_fk(nc, aux3->info))
+                    if(nc->pk == 'S' && qtd_pk == 1)
+                    {
+                        if(!verificar_pk(nc, aux3->info))
+                        {
+                            printf("Erro: valor de PK ja existe!\n");
+                            valido = 0;
+                        }
+                    }
+                    else if(nc->pk == 'S' && qtd_pk > 1)
+                        aux = NULL;
+
+                    if(valido && !verificar_fk(nc, aux3->info))
                     {
                         printf("Erro: valor de FK nao existe!\n");
                         valido = 0;
@@ -496,17 +634,26 @@ void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
                 aux3 = aux3->prox;
             }
 
+            if(valido && contar_pk(coluna) > 1)
+            {
+                if(!verificar_pk_composta(nt, *f2, *f3))
+                {
+                    printf("Erro: chave primaria composta ja existe!\n");
+                    valido = 0;
+                }
+            }
+
             if(valido)
             {
                 while(!isEmpty(*f2) && !isEmpty(*f3))
                 {
-                    dequeue(&*f2, info);
+                    dequeue(f2, info);
 
                     nc = buscar_campo(coluna, info);
 
                     if(nc)
                     {
-                        dequeue(&*f3, info);
+                        dequeue(f3, info);
 
                         novo = criar_valor();
                         novo->prox = NULL;
@@ -543,66 +690,6 @@ void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
         }
     }
 }
-
-int buscar_posicao(campos *inicio, char *operador, char *valor)
-{
-    int pos = 0;
-    valorc *aux = inicio->Pdados;
-
-    while(aux)
-    {
-        if(inicio->tipo == 'I')
-        {
-            if(strcmp(operador, "=") == 0 &&
-               aux->dado.valorI == atoi(valor))
-                return pos;
-        }
-        else if(inicio->tipo == 'N')
-        {
-            if(strcmp(operador, "=") == 0 &&
-               aux->dado.valorN == atof(valor))
-                return pos;
-        }
-        else if(inicio->tipo == 'D')
-        {
-            if(strcmp(operador, "=") == 0 &&
-               strcmp(aux->dado.valorD, valor) == 0)
-                return pos;
-        }
-        else if(inicio->tipo == 'T')
-        {
-            if(strcmp(operador, "=") == 0 &&
-               strcmp(aux->dado.valorT, valor) == 0)
-                return pos;
-        }
-        else if(inicio->tipo == 'C')
-        {
-            if(strcmp(operador, "=") == 0 &&
-               aux->dado.valorC == valor[0])
-                return pos;
-        }
-
-        aux = aux->prox;
-        pos++;
-    }
-
-    return -1;
-}
-
-valorc *buscar_valor_posicao(campos *inicio, int pos)
-{
-    int i = 0;
-    valorc *aux = inicio->Pdados;
-
-    while(aux && i < pos)
-    {
-        aux = aux->prox;
-        i++;
-    }
-
-    return aux;
-}
-
 
 void parser_where(char *campo, char *operador, char *valor, char *entrada)
 {
@@ -740,9 +827,11 @@ void executar_update(tabela *ptab, fila **f1, fila **f2, fila **f3, fila **f4)
     char info[50], valor[50], where[100];
     char campo_where[30], operador[10], valor_where[30];
     int valido;
+    int qtd_pk;
     tabela *nt;
     campos *campo_w, *nc;
     valorc *aux_w, *aux_nc;
+    valorc *linha_atual;
 
     if(!isEmpty(*f1))
     {
@@ -776,19 +865,44 @@ void executar_update(tabela *ptab, fila **f1, fila **f2, fila **f3, fila **f4)
                     {
                         aux_w = campo_w->Pdados;
                         aux_nc = nc->Pdados;
+                        linha_atual = nt->pcampos->Pdados;
 
-                        while(aux_w && aux_nc)
+                        while(aux_w && aux_nc && linha_atual)
                         {
                             if(verifica_where(campo_w, aux_w, where))
                             {
                                 valido = 1;
+                                qtd_pk = contar_pk(nt->pcampos);
 
-                                if(nc->pk == 'S')
+                                if(nc->pk == 'S' && !valor_igual(nc, aux_nc, valor))
                                 {
-                                    if(!verificar_pk_update(nc, aux_nc, valor))
+                                    if(!verificar_fk_delete(ptab, nc, aux_nc))
                                     {
-                                        printf("Erro: valor de PK ja existe!\n");
+                                        printf("Erro: PK possui referencia de FK!\n");
                                         valido = 0;
+                                    }
+                                }
+
+                                if(valido && nc->pk == 'S')
+                                {
+                                    if(qtd_pk == 1)
+                                    {
+                                        if(!verificar_pk_update(nc, aux_nc, valor))
+                                        {
+                                            printf("Erro: valor de PK ja existe!\n");
+                                            valido = 0;
+                                        }
+                                    }
+                                    else if(qtd_pk > 1)
+                                    {
+                                        if(!verificar_pk_update_composta(nt,
+                                                                         linha_atual,
+                                                                         nc,
+                                                                         valor))
+                                        {
+                                            printf("Erro: chave primaria composta ja existe!\n");
+                                            valido = 0;
+                                        }
                                     }
                                 }
 
@@ -819,6 +933,7 @@ void executar_update(tabela *ptab, fila **f1, fila **f2, fila **f3, fila **f4)
 
                             aux_w = aux_w->prox;
                             aux_nc = aux_nc->prox;
+                            linha_atual = linha_atual->prox;
                         }
                     }
                 }
@@ -872,6 +987,9 @@ void remover_valor_campo(campos *campo, valorc *valor)
 
     if(aux)
     {
+        if(campo->Patual == aux)
+            campo->Patual = aux->prox;
+
         if(ant == NULL)
             campo->Pdados = aux->prox;
         else
@@ -1064,53 +1182,63 @@ void formatar_valor(campos *campo, valorc *v, char *destino){
     }
 }
 
-int linha_atende_where(campos *campo_w, char *operador, char *valor_where, int pos)
+int linha_atende_where(tabela *nt, fila *condicoes, valorc *linha)
 {
-    int resultado;
+    int resultado = 1;
+    fila *condicao;
+    char campo_where[30];
+    int i;
+    campos *campo_w;
     valorc *v;
 
-    if(!campo_w)
-        resultado = 1;
-    else
-    {
-        v = buscar_valor_posicao(campo_w, pos);
+    condicao = condicoes;
 
-        if(!v)
-            resultado = 0;
-        else
+    while(condicao && resultado)
+    {
+        i = 0;
+        ler_palavra(condicao->info, &i, campo_where);
+        campo_w = buscar_campo(nt->pcampos, campo_where);
+
+        if(campo_w)
         {
-            if(strcmp(operador, "=") == 0)
-                resultado = valor_igual(campo_w, v, valor_where);
+            v = buscar_valor_linha(campo_w, nt->pcampos, linha);
+
+            if(v)
+                resultado = verifica_where(campo_w, v, condicao->info);
             else
-                resultado = compara_valor(campo_w, v, operador, valor_where);
+                resultado = 0;
         }
+        else
+            resultado = 0;
+
+        condicao = condicao->prox;
     }
 
     return resultado;
 }
 
-void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n, campos *campo_w, char *operador, char *valor_where)
+void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n,
+                               fila *condicoes)
 {
     int largura[30];
-    int total_linhas;
-    int pos;
     int j;
     char valor_str[30];
     valorc *ref;
+    valorc *valor;
 
     for(j = 0; j < n; j++)
         largura[j] = strlen(colunas[j]->campo);
 
     ref = nt->pcampos->Pdados;
-    pos = 0;
 
     while(ref)
     {
-        if(linha_atende_where(campo_w, operador, valor_where, pos))
+        if(linha_atende_where(nt, condicoes, ref))
         {
             for(j = 0; j < n; j++)
             {
-                formatar_valor(colunas[j], buscar_valor_posicao(colunas[j], pos), valor_str);
+                valor = buscar_valor_linha(colunas[j], nt->pcampos, ref);
+                formatar_valor(colunas[j], valor, valor_str);
 
                 if((int)strlen(valor_str) > largura[j])
                     largura[j] = strlen(valor_str);
@@ -1118,10 +1246,7 @@ void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n, campos *cam
         }
 
         ref = ref->prox;
-        pos++;
     }
-
-    total_linhas = pos;
 
     cor_ciano();
 
@@ -1136,20 +1261,25 @@ void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n, campos *cam
 
     imprimir_borda(largura, n);
 
-    for(pos = 0; pos < total_linhas; pos++)
+    ref = nt->pcampos->Pdados;
+
+    while(ref)
     {
-        if(linha_atende_where(campo_w, operador, valor_where, pos))
+        if(linha_atende_where(nt, condicoes, ref))
         {
             printf("|");
 
             for(j = 0; j < n; j++)
             {
-                formatar_valor(colunas[j], buscar_valor_posicao(colunas[j], pos), valor_str);
+                valor = buscar_valor_linha(colunas[j], nt->pcampos, ref);
+                formatar_valor(colunas[j], valor, valor_str);
                 printf(" %-*s |", largura[j], valor_str);
             }
 
             printf("\n");
         }
+
+        ref = ref->prox;
     }
 
     imprimir_borda(largura, n);
@@ -1206,19 +1336,26 @@ int verifica_where(campos *campo_w, valorc *valor_w, char entrada[])
 
     while(entrada[i] != '\0' && entrada[i] != ';' && resultado)
     {
+        pula_espacos(entrada, &i);
         ler_palavra(entrada, &i, campo);
+
+        pula_espacos(entrada, &i);
         ler_palavra(entrada, &i, operador);
+
+        pula_espacos(entrada, &i);
 
         if(strcmp(operador, "BETWEEN") == 0 || strcmp(operador, "between") == 0)
         {
             ler_palavra(entrada, &i, valor1);
+
+            pula_espacos(entrada, &i);
             ler_palavra(entrada, &i, palavra);
+
+            pula_espacos(entrada, &i);
             ler_palavra(entrada, &i, valor2);
 
             if(strcmp(palavra, "AND") == 0 || strcmp(palavra, "and") == 0)
-            {
                 resultado = verifica_between(campo_w, valor_w, valor1, valor2);
-            }
             else
                 resultado = 0;
         }
@@ -1244,19 +1381,8 @@ int verifica_where(campos *campo_w, valorc *valor_w, char entrada[])
     }
 
     return resultado;
-    /*
-    1. Lê "ano"
-    2. Lê "BETWEEN"
-    3. Lê "1970"
-    4. Lê "AND"
-    5. Lê "2010"
-    6. Verifica:
-        2005 >= 1970 ?
-        2005 <= 2010 ?
-    7. Se as duas forem verdadeiras → retorna 1
-    8. Senão → retorna 0
-    */
 }
+
 void separar_campo_join(char entrada[], char nome_tabela[], char nome_campo[])
 {
     int i = 0, j = 0;
@@ -1287,7 +1413,9 @@ void parser_condicao_join(char entrada[], char tabela1[], char campo1[], char op
     char esquerda[50], direita[50];
 
     ler_palavra(entrada, &i, esquerda);
+    pula_espacos(entrada, &i);
     ler_palavra(entrada, &i, operador);
+    pula_espacos(entrada, &i);
     ler_palavra(entrada, &i, direita);
 
     separar_campo_join(esquerda, tabela1, campo1);
@@ -1393,19 +1521,19 @@ int valores_iguais_join(campos *campo1, valorc *valor1, campos *campo2, valorc *
 void imprimir_valor(campos *campo, valorc *valor)
 {
     if(campo->tipo == 'I')
-        printf("| %d ", valor->dado.valorI);
+        printf("| %-25d ", valor->dado.valorI);
 
     else if(campo->tipo == 'N')
-        printf("| %.2f ", valor->dado.valorN);
+        printf("| %-25.2f ", valor->dado.valorN);
 
     else if(campo->tipo == 'D')
-        printf("| %s ", valor->dado.valorD);
+        printf("| %-25s ", valor->dado.valorD);
 
     else if(campo->tipo == 'T')
-        printf("| %s ", valor->dado.valorT);
+        printf("| %-25s ", valor->dado.valorT);
 
     else if(campo->tipo == 'C')
-        printf("| %c ", valor->dado.valorC);
+        printf("| %-25c ", valor->dado.valorC);
 }
 
 void imprimir_tabela_join(tabela *t, valorc *linha)
@@ -1552,6 +1680,145 @@ void dequeue_select(fila **f, char info[])
 }
 
 
+int contar_colunas_join(fila *f1, tabela *t1, tabela *t2, tabela *t3, tabela *t4)
+{
+    int n = 0;
+    fila *aux_f1;
+    campos *campo;
+
+    if(f1 && strcmp(f1->info, "*") == 0)
+    {
+        if(t1)
+        {
+            campo = t1->pcampos;
+            while(campo)
+            {
+                n++;
+                campo = campo->prox;
+            }
+        }
+
+        if(t2)
+        {
+            campo = t2->pcampos;
+            while(campo)
+            {
+                n++;
+                campo = campo->prox;
+            }
+        }
+
+        if(t3)
+        {
+            campo = t3->pcampos;
+            while(campo)
+            {
+                n++;
+                campo = campo->prox;
+            }
+        }
+
+        if(t4)
+        {
+            campo = t4->pcampos;
+            while(campo)
+            {
+                n++;
+                campo = campo->prox;
+            }
+        }
+    }
+    else
+    {
+        aux_f1 = f1;
+        while(aux_f1)
+        {
+            n++;
+            aux_f1 = aux_f1->prox;
+        }
+    }
+
+    return n;
+}
+
+void imprimir_borda_join(int n)
+{
+    int i, j;
+
+    for(i = 0; i < n; i++)
+    {
+        printf("+");
+        for(j = 0; j < 27; j++)
+            printf("-");
+    }
+
+    printf("+\n");
+}
+
+void imprimir_cabecalho_join(fila *f1, tabela *t1, tabela *t2, tabela *t3, tabela *t4)
+{
+    fila *aux_f1;
+    campos *campo;
+
+    imprimir_borda_join(contar_colunas_join(f1, t1, t2, t3, t4));
+    printf("|");
+
+    if(f1 && strcmp(f1->info, "*") == 0)
+    {
+        if(t1)
+        {
+            campo = t1->pcampos;
+            while(campo)
+            {
+                printf(" %-25s |", campo->campo);
+                campo = campo->prox;
+            }
+        }
+
+        if(t2)
+        {
+            campo = t2->pcampos;
+            while(campo)
+            {
+                printf(" %-25s |", campo->campo);
+                campo = campo->prox;
+            }
+        }
+
+        if(t3)
+        {
+            campo = t3->pcampos;
+            while(campo)
+            {
+                printf(" %-25s |", campo->campo);
+                campo = campo->prox;
+            }
+        }
+
+        if(t4)
+        {
+            campo = t4->pcampos;
+            while(campo)
+            {
+                printf(" %-25s |", campo->campo);
+                campo = campo->prox;
+            }
+        }
+    }
+    else
+    {
+        aux_f1 = f1;
+        while(aux_f1)
+        {
+            printf(" %-25s |", aux_f1->info);
+            aux_f1 = aux_f1->prox;
+        }
+    }
+
+    printf("\n");
+    imprimir_borda_join(contar_colunas_join(f1, t1, t2, t3, t4));
+}
+
 void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
 {
     char info[100];
@@ -1608,6 +1875,8 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
     if(t4)
         base4 = t4->pcampos;
 
+    if(t1 && t2)
+        imprimir_cabecalho_join(f1, t1, t2, t3, t4);
 
     /*
      * JOIN com 2 tabelas
@@ -1792,15 +2061,14 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
 
 void executar_select_simples(tabela *ptab, fila *f1, fila *f2, fila *f3)
 {
-    char info[100], where[100], campo_where[30];
-    int i;
+    char info[100];
+    int n;
     tabela *nt;
-    campos *campo_w, *aux;
-    valorc *aux_w, *aux_v;
+    campos *aux;
+    campos *colunas[30];
 
     nt = NULL;
-    campo_w = NULL;
-    where[0] = '\0';
+    n = 0;
 
     if(!isEmpty(f2))
     {
@@ -1810,166 +2078,31 @@ void executar_select_simples(tabela *ptab, fila *f1, fila *f2, fila *f3)
 
         if(nt)
         {
-            /* Verifica se existe WHERE */
-            if(!isEmpty(f3))
-            {
-                dequeue_select(&f3, where);
-
-                i = 0;
-                ler_palavra(where, &i, campo_where);
-
-                campo_w = buscar_campo(nt->pcampos, campo_where);
-            }
-
-            while(!isEmpty(f1))
+            while(!isEmpty(f1) && n < 30)
             {
                 dequeue_select(&f1, info);
 
-                
                 if(strcmp(info, "*") == 0)
                 {
-                    printf("Tabela: %s\n", nt->nome_tabela);
-
                     aux = nt->pcampos;
 
-                    while(aux) //AUX EH O CAMPOS
+                    while(aux && n < 30)
                     {
-                        printf("Campo: %s |\t Tipo: %c |\t PK: %c |\t", aux->campo, aux->tipo, aux->pk);
-
-                        
-                        if(campo_w == NULL)
-                        {
-                            aux_v = aux->Pdados;
-
-                            while(aux_v)
-                            {
-                                if(aux->tipo == 'I')
-                                    printf("| %d ", aux_v->dado.valorI);
-
-                                else if(aux->tipo == 'N')
-                                    printf("| %.2f ", aux_v->dado.valorN);
-
-                                else if(aux->tipo == 'D')
-                                    printf("| %s ", aux_v->dado.valorD);
-
-                                else if(aux->tipo == 'T')
-                                    printf("| %s ", aux_v->dado.valorT);
-
-                                else if(aux->tipo == 'C')
-                                    printf("| %c ", aux_v->dado.valorC);
-
-                                aux_v = aux_v->prox;
-                            }
-                        }
-
-                        else
-                        {
-                            aux_w = campo_w->Pdados;
-                            aux_v = aux->Pdados;
-
-                            while(aux_w && aux_v)
-                            {
-                                if(verifica_where(campo_w, aux_w, where))
-                                {
-                                    if(aux->tipo == 'I')
-                                        printf("| %d ", aux_v->dado.valorI);
-
-                                    else if(aux->tipo == 'N')
-                                        printf("| %.2f ", aux_v->dado.valorN);
-
-                                    else if(aux->tipo == 'D')
-                                        printf("| %s ", aux_v->dado.valorD);
-
-                                    else if(aux->tipo == 'T')
-                                        printf("| %s ", aux_v->dado.valorT);
-
-                                    else if(aux->tipo == 'C')
-                                        printf("| %c ", aux_v->dado.valorC);
-                                }
-
-                                aux_w = aux_w->prox;
-                                aux_v = aux_v->prox;
-                            }
-                        }
-
-                        printf("|\n");
-
+                        colunas[n++] = aux;
                         aux = aux->prox;
                     }
                 }
-
-                // SELECT COM CAMPOS ESPECIFICOS
                 else
                 {
                     aux = buscar_campo(nt->pcampos, info);
 
                     if(aux)
-                    {
-                        printf("Tabela: %s\n", nt->nome_tabela);
-                        printf("Campo: %s |\t Tipo: %c |\t PK: %c |\t", aux->campo, aux->tipo, aux->pk);
-
-                        
-                        if(campo_w == NULL) //SEM WHERE
-                        {
-                            aux_v = aux->Pdados;
-
-                            while(aux_v)
-                            {
-                                if(aux->tipo == 'I')
-                                    printf("| %d ", aux_v->dado.valorI);
-
-                                else if(aux->tipo == 'N')
-                                    printf("| %.2f ", aux_v->dado.valorN);
-
-                                else if(aux->tipo == 'D')
-                                    printf("| %s ", aux_v->dado.valorD);
-
-                                else if(aux->tipo == 'T')
-                                    printf("| %s ", aux_v->dado.valorT);
-
-                                else if(aux->tipo == 'C')
-                                    printf("| %c ", aux_v->dado.valorC);
-
-                                aux_v = aux_v->prox;
-                            }
-                        }
-
-                        
-                        else //COM WHERE
-                        {
-                            aux_w = campo_w->Pdados;
-                            aux_v = aux->Pdados;
-
-                            while(aux_w && aux_v)
-                            {
-                                if(verifica_where(campo_w, aux_w, where))
-                                {
-                                    if(aux->tipo == 'I')
-                                        printf("| %d ", aux_v->dado.valorI);
-
-                                    else if(aux->tipo == 'N')
-                                        printf("| %.2f ", aux_v->dado.valorN);
-
-                                    else if(aux->tipo == 'D')
-                                        printf("| %s ", aux_v->dado.valorD);
-
-                                    else if(aux->tipo == 'T')
-                                        printf("| %s ", aux_v->dado.valorT);
-
-                                    else if(aux->tipo == 'C')
-                                        printf("| %c ", aux_v->dado.valorC);
-                                }
-
-                                aux_w = aux_w->prox;
-                                aux_v = aux_v->prox;
-                            }
-                        }
-
-                        printf("|\n");
-                    }
+                        colunas[n++] = aux;
                 }
             }
 
+            if(n > 0)
+                imprimir_tabela_resultado(nt, colunas, n, f3);
         }
     }
 }
@@ -1981,37 +2114,4 @@ void executar_select(tabela *ptab, fila *f1, fila *f2, fila *f3)
     else
         executar_select_simples(ptab, f1, f2, f3);
 }
-
-
-/*
-O que falta e oq ja esta feito
-SELECT
-├── SELECT *                    ✅
-├── SELECT campos específicos   ✅
-├── WHERE operadores            ✅
-├── WHERE BETWEEN               ✅
-├── JOIN 2 tabelas              ✅
-├── JOIN 3 tabelas              ✅
-├── JOIN 4 tabelas              ✅
-├── SELECT * com JOIN            ✅
-└── SELECT campos.tabela         ✅
-
-CREATE DATABASE             🔄
-CREATE TABLE                 🔄
-ALTER TABLE / FK             🔄
-
-INSERT                       ✅
-UPDATE                       ✅
-DELETE                       ✅
-SELECT                       ✅
-
-PK duplicada                 ❌
-FK no INSERT                 ❌
-FK no UPDATE                 ❌
-FK no DELETE                 ❌
-
-Script SQL de teste          🔄
-Testar tudo                  🔄
-*/
-
 

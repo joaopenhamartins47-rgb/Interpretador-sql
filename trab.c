@@ -7,7 +7,7 @@
 int parser_comando(char entrada[], char *comando)
 {
     int i;
-    for(i=0;entrada[i] != ' ';i++)
+    for(i=0; entrada[i] != ' ' && entrada[i] != '\0' && i < 29; i++)
     {
         comando[i] = entrada[i];
     }
@@ -159,6 +159,8 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
             j = 0;
             k = 0;
 
+            pula_espacos(entrada, &i);
+
             /*
              * Campo
              */
@@ -169,6 +171,8 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 
             condicao[k++] = ' ';
 
+            pula_espacos(entrada, &i);
+
             /*
              * Operador
              */
@@ -177,6 +181,8 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 
             while(operador[j] != '\0')
                 condicao[k++] = operador[j++];
+
+            pula_espacos(entrada, &i);
 
             /*
              * BETWEEN
@@ -192,6 +198,7 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
                 while(valor1[j] != '\0')
                     condicao[k++] = valor1[j++];
 
+                pula_espacos(entrada, &i);
                 condicao[k++] = ' ';
 
                 j = 0;
@@ -200,6 +207,7 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
                 while(palavra[j] != '\0')
                     condicao[k++] = palavra[j++];
 
+                pula_espacos(entrada, &i);
                 condicao[k++] = ' ';
 
                 j = 0;
@@ -211,7 +219,6 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
                 condicao[k] = '\0';
             }
 
-            
             else
             {
                 condicao[k++] = ' ';
@@ -297,7 +304,7 @@ void parser_delete(char entrada[], int i, fila **f1, fila **f2)
 
 void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila **f4)
 {
-    int j = 0, na = 0, col = 0;
+    int j = 0, col = 0;
     char palavra[50];
     //f1 eh a tabela que sera alterada, f2 sao os campos, f3 os valores e f4 where
 
@@ -677,12 +684,25 @@ void processar_create_table(char *entrada, int i, pondb *pdb)
                 if(segmento[k] == '(')
                     k++;
 
-                ler_palavra(segmento, &k, nome_campo);
+                while(segmento[k] != '\0' && segmento[k] != ')')
+                {
+                    pula_espacos(segmento, &k);
 
-                nc = buscar_campo(nt->pcampos, nome_campo);
+                    if(segmento[k] == ',')
+                    {
+                        k++;
+                        pula_espacos(segmento, &k);
+                    }
 
-                if(nc)
-                    nc->pk = 'S';
+                    ler_palavra(segmento, &k, nome_campo);
+
+                    nc = buscar_campo(nt->pcampos, nome_campo);
+
+                    if(nc)
+                        nc->pk = 'S';
+
+                    pula_espacos(segmento, &k);
+                }
             }
             else
             {
@@ -813,13 +833,16 @@ void abrir_arquivo_script(char *caminho, pondb **pdb){
     }
 }
 
+
+
 int main(void){
     int i;
     char comando[30];
-    char entrada[100];
+    char entrada[500];
     char caminho[100];
     fila *f1, *f2, *f3, *f4;
     pondb *pdb;
+
     inicializa_ponteiro_banco(&pdb);
     init(&f1);
     init(&f2);
@@ -827,49 +850,20 @@ int main(void){
     init(&f4);
 
     printf("Digite o nome do arquivo de script (deve estar na pasta do projeto): ");
-    fgets(caminho, sizeof(caminho), stdin);
-
-    i = 0;
-    while(caminho[i] != '\n' && caminho[i] != '\0')
-        i++;
-    caminho[i] = '\0';
+    ler_entrada(caminho, sizeof(caminho));
 
     abrir_arquivo_script(caminho, &pdb);
 
     imprimir_banco(pdb);
 
     gets(entrada);
-    while(strcmp(entrada, "\0") != 0)
+    while(entrada[0] != '\0')
     {
         i = parser_comando(entrada, comando);
-        if(isCREATE(comando))
-        {
-            pula_espacos(entrada, &i);
 
-            if(isCreateDatabase(entrada, &i))
-            {
-                /*
-                    Aqui entra a parte que vai extrair
-                    o nome do banco do comando.
-                */
-                criar_banco(&pdb, "banco_de_dados"); //Aqui vai entrar a parte do create database pra extrair os dados do script sql, entao acho q seria uma variavel
-            }
-            else
-            {  
-                /*
-                    Aqui entra a parte que vai extrair
-                    o nome da tabela e os campos.
-                */
-                inserir_tabela(&pdb->pbanco->ptabelas, "nome_tabela");
-            }
-        }
-        else if(isALTER(comando))
+        if(isCREATE(comando) || isALTER(comando))
         {
-            /*
-                ALTER TABLE
-                Aqui entra a função que vai
-                criar o relacionamento FK.
-            */
+            executar_comando_ddl(entrada, &pdb);
         }
         else if(isSELECT(comando))
         {
@@ -884,34 +878,20 @@ int main(void){
         else if(isUPDATE(comando))
         {
             parser_update(entrada, i, &f1, &f2, &f3, &f4);
-
-            executar_update(pdb->pbanco->ptabelas, &f1,&f2,&f3,&f4);
+            executar_update(pdb->pbanco->ptabelas, &f1, &f2, &f3, &f4);
         }
         else if(isDELETE(comando))
         {
             parser_delete(entrada, i, &f1, &f2);
-            executar_delete(pdb->pbanco->ptabelas,&f1, &f2);
+            executar_delete(pdb->pbanco->ptabelas, &f1, &f2);
         }
 
-        gets(entrada);
         limpar_filas(&f1, &f2, &f3, &f4);
+        ler_entrada(entrada, sizeof(entrada));
     }
 
+    limpar_filas(&f1, &f2, &f3, &f4);
 
     return 0;
 }
-/*
-INTEGRIDADE
-├── PK duplicada                             ❌
-├── FK no INSERT                             ❌
-├── FK no UPDATE                             ❌
-└── FK no DELETE                             ❌
-
-FINALIZAÇÃO
-├── Limpar filas após SELECT                 ❌
-├── Ajustar saída para formato de tabela     🔄
-├── Corrigir Patual após DELETE              🔄
-├── Script final                             🔄
-└── Testes completos                         🔄
-*/
 
