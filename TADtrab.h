@@ -901,23 +901,61 @@ int valor_igual(campos *campo, valorc *aux, char *valor)
     return 0;
 }
 
+char verificar_fk_delete(tabela *ptab, campos *campo, valorc *valor)
+{
+    tabela *tb;
+    campos *campo_fk;
+    valorc *aux;
+    char encontrou;
+
+    encontrou = 0;
+    tb = ptab;
+
+    while(tb && !encontrou)
+    {
+        campo_fk = tb->pcampos;
+
+        while(campo_fk && !encontrou)
+        {
+            if(campo_fk->fk == campo)
+            {
+                aux = campo_fk->Pdados;
+
+                while(aux && !encontrou)
+                {
+                    if(valores_iguais_join(campo_fk, aux, campo, valor))
+                        encontrou = 1;
+
+                    aux = aux->prox;
+                }
+            }
+
+            campo_fk = campo_fk->prox;
+        }
+
+        tb = tb->prox;
+    }
+
+    if(encontrou)
+        return 0;
+
+    return 1;
+}
+
+
 void executar_delete(tabela *ptabela, fila **f1, fila **f2)
 {
     tabela *nt;
-    campos *campo_w, *campo;
-    valorc *aux_w, *ant_w, *proximo, *aux, *ant;
+    campos *campo_w;
+    valorc *aux_w;
+    valorc *proximo;
 
     char nome_tabela[30], campo_where[30], operador[5], valor[30], where[40];
 
     nt = NULL;
     campo_w = NULL;
-    campo = NULL;
     aux_w = NULL;
-    ant_w = NULL;
     proximo = NULL;
-    aux = NULL;
-    ant = NULL;
-    
 
     if(!isEmpty(*f1))
     {
@@ -948,18 +986,28 @@ void executar_delete(tabela *ptabela, fila **f1, fila **f2)
                     {
                         if(valor_igual(campo_w, aux_w, valor))
                         {
-                            remover_outros_campos(nt, campo_w, aux_w);
+                            if(verificar_fk_delete(ptabela, campo_w, aux_w))
+                            {
+                                remover_outros_campos(nt, campo_w, aux_w);
 
-                            remover_valor_campo(campo_w, aux_w);
+                                remover_valor_campo(campo_w, aux_w);
+                            }
+                            else
+                                printf("Erro: registro possui referencia de FK!\n");
                         }
                     }
                     else
                     {
                         if(compara_valor(campo_w, aux_w, operador, valor))
                         {
-                            remover_outros_campos(nt, campo_w, aux_w);
+                            if(verificar_fk_delete(ptabela, campo_w, aux_w))
+                            {
+                                remover_outros_campos(nt, campo_w, aux_w);
 
-                            remover_valor_campo(campo_w, aux_w);
+                                remover_valor_campo(campo_w, aux_w);
+                            }
+                            else
+                                printf("Erro: registro possui referencia de FK!\n");
                         }
                     }
 
@@ -969,7 +1017,6 @@ void executar_delete(tabela *ptabela, fila **f1, fila **f2)
         }
     }
 }
-
 void cor_ciano(void)
 {
     textcolor(CYAN);
