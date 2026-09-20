@@ -850,7 +850,6 @@ int main(void){
     init(&f4);
 
     printf("Digite o nome do arquivo de script (deve estar na pasta do projeto): ");
-    ler_entrada(caminho, sizeof(caminho));
 
     abrir_arquivo_script(caminho, &pdb);
 
@@ -887,7 +886,7 @@ int main(void){
         }
 
         limpar_filas(&f1, &f2, &f3, &f4);
-        ler_entrada(entrada, sizeof(entrada));
+        gets(entrada);
     }
 
     limpar_filas(&f1, &f2, &f3, &f4);
