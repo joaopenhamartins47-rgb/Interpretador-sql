@@ -710,10 +710,36 @@ int compara_valor(campos *campo, valorc *aux, char *operador, char *valor)
     return 0;
 }
 
+char verificar_pk_update(campos *campo, valorc *atual, char valor[])
+{
+    valorc *aux;
+    int achou;
+
+    achou = 0;
+    aux = campo->Pdados;
+
+    while(aux && !achou)
+    {
+        if(aux != atual)
+        {
+            if(valor_igual(campo, aux, valor))
+                achou = 1;
+        }
+
+        aux = aux->prox;
+    }
+
+    if(achou)
+        return 0;
+
+    return 1;
+}
+
 void executar_update(tabela *ptab, fila **f1, fila **f2, fila **f3, fila **f4)
 {
     char info[50], valor[50], where[100];
     char campo_where[30], operador[10], valor_where[30];
+    int valido;
     tabela *nt;
     campos *campo_w, *nc;
     valorc *aux_w, *aux_nc;
@@ -755,20 +781,40 @@ void executar_update(tabela *ptab, fila **f1, fila **f2, fila **f3, fila **f4)
                         {
                             if(verifica_where(campo_w, aux_w, where))
                             {
-                                if(nc->tipo == 'I')
-                                    aux_nc->dado.valorI = atoi(valor);
+                                valido = 1;
 
-                                else if(nc->tipo == 'N')
-                                    aux_nc->dado.valorN = atof(valor);
+                                if(nc->pk == 'S')
+                                {
+                                    if(!verificar_pk_update(nc, aux_nc, valor))
+                                    {
+                                        printf("Erro: valor de PK ja existe!\n");
+                                        valido = 0;
+                                    }
+                                }
 
-                                else if(nc->tipo == 'D')
-                                    strcpy(aux_nc->dado.valorD, valor);
+                                if(valido && !verificar_fk(nc, valor))
+                                {
+                                    printf("Erro: valor de FK nao existe!\n");
+                                    valido = 0;
+                                }
 
-                                else if(nc->tipo == 'T')
-                                    strcpy(aux_nc->dado.valorT, valor);
+                                if(valido)
+                                {
+                                    if(nc->tipo == 'I')
+                                        aux_nc->dado.valorI = atoi(valor);
 
-                                else if(nc->tipo == 'C')
-                                    aux_nc->dado.valorC = valor[0];
+                                    else if(nc->tipo == 'N')
+                                        aux_nc->dado.valorN = atof(valor);
+
+                                    else if(nc->tipo == 'D')
+                                        strcpy(aux_nc->dado.valorD, valor);
+
+                                    else if(nc->tipo == 'T')
+                                        strcpy(aux_nc->dado.valorT, valor);
+
+                                    else if(nc->tipo == 'C')
+                                        aux_nc->dado.valorC = valor[0];
+                                }
                             }
 
                             aux_w = aux_w->prox;
