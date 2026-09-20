@@ -314,14 +314,11 @@ int tipo_valido(char tipo)
 {
     return tipo == 'I' || tipo == 'N' || tipo == 'D' || tipo == 'C' || tipo == 'T';
 }
-/*
-Criar uma função para imprimir o banco, tabelas, campos e dados
-*/
 
 void imprimir_banco(pondb *banco)
 {
     if(!banco)
-        printf("Banco não existente!\n");
+        printf("Banco nao existente!\n");
     else
     {
         
@@ -427,13 +424,13 @@ void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
 
         if(nt)
         {
-            campos *aux = nt->pcampos;
+            campos *coluna = nt->pcampos;
 
             while(!isEmpty(*f2) && !isEmpty(*f3))
             {
                 dequeue(&*f2, info);
 
-                nc = buscar_campo(aux, info);
+                nc = buscar_campo(coluna, info);
 
                 if(nc)
                 {
@@ -876,6 +873,146 @@ void executar_delete(tabela *ptabela, fila **f1, fila **f2)
             }
         }
     }
+}
+
+void cor_ciano(void)
+{
+    textcolor(CYAN);
+}
+
+void cor_padrao(void)
+{
+    textcolor(LIGHTGRAY);
+}
+
+void imprimir_borda(int largura[], int n)
+{
+    int j, k;
+
+    for(j = 0; j < n; j++)
+    {
+        printf("+");
+
+        for(k = 0; k < largura[j] + 2; k++)
+            printf("-");
+    }
+
+    printf("+\n");
+}
+
+void formatar_valor(campos *campo, valorc *v, char *destino){
+    if(!v)
+        strcpy(destino, "");
+    else
+    {
+        if(campo->tipo == 'I')
+            sprintf(destino, "%d", v->dado.valorI);
+
+        else if(campo->tipo == 'N')
+            sprintf(destino, "%.2f", v->dado.valorN);
+
+        else if(campo->tipo == 'D')
+            sprintf(destino, "%s", v->dado.valorD);
+
+        else if(campo->tipo == 'T')
+            sprintf(destino, "%s", v->dado.valorT);
+
+        else if(campo->tipo == 'C')
+            sprintf(destino, "%c", v->dado.valorC);
+    }
+}
+
+int linha_atende_where(campos *campo_w, char *operador, char *valor_where, int pos)
+{
+    int resultado;
+    valorc *v;
+
+    if(!campo_w)
+        resultado = 1;
+    else
+    {
+        v = buscar_valor_posicao(campo_w, pos);
+
+        if(!v)
+            resultado = 0;
+        else
+        {
+            if(strcmp(operador, "=") == 0)
+                resultado = valor_igual(campo_w, v, valor_where);
+            else
+                resultado = compara_valor(campo_w, v, operador, valor_where);
+        }
+    }
+
+    return resultado;
+}
+
+void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n, campos *campo_w, char *operador, char *valor_where)
+{
+    int largura[30];
+    int total_linhas;
+    int pos;
+    int j;
+    char valor_str[30];
+    valorc *ref;
+
+    for(j = 0; j < n; j++)
+        largura[j] = strlen(colunas[j]->campo);
+
+    ref = nt->pcampos->Pdados;
+    pos = 0;
+
+    while(ref)
+    {
+        if(linha_atende_where(campo_w, operador, valor_where, pos))
+        {
+            for(j = 0; j < n; j++)
+            {
+                formatar_valor(colunas[j], buscar_valor_posicao(colunas[j], pos), valor_str);
+
+                if((int)strlen(valor_str) > largura[j])
+                    largura[j] = strlen(valor_str);
+            }
+        }
+
+        ref = ref->prox;
+        pos++;
+    }
+
+    total_linhas = pos;
+
+    cor_ciano();
+
+    imprimir_borda(largura, n);
+
+    printf("|");
+
+    for(j = 0; j < n; j++)
+        printf(" %-*s |", largura[j], colunas[j]->campo);
+
+    printf("\n");
+
+    imprimir_borda(largura, n);
+
+    for(pos = 0; pos < total_linhas; pos++)
+    {
+        if(linha_atende_where(campo_w, operador, valor_where, pos))
+        {
+            printf("|");
+
+            for(j = 0; j < n; j++)
+            {
+                formatar_valor(colunas[j], buscar_valor_posicao(colunas[j], pos), valor_str);
+                printf(" %-*s |", largura[j], valor_str);
+            }
+
+            printf("\n");
+        }
+    }
+
+    imprimir_borda(largura, n);
+
+    cor_padrao();
 }
 
 /*f1 → colunas que o usuário pediu
@@ -1703,6 +1840,12 @@ void executar_select_simples(tabela *ptab, fila *f1, fila *f2, fila *f3)
                         printf("|\n");
                     }
                 }
+            }
+
+            if(n > 0)
+            {
+                printf("Tabela: %s\n", nt->nome_tabela);
+                imprimir_tabela_resultado(nt, colunas, n, campo_w, operador, valor_where);
             }
         }
     }

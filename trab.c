@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <conio2.h>
 #include "TADtrab.h"
 
 int parser_comando(char entrada[], char *comando)
@@ -512,11 +513,313 @@ char isCreateDatabase(char entrada[], int *i)
     return 0;
 }
 
-int main(void)
+int compara_palavra(char *a, char *b){
+    int i = 0;
+    char ca, cb;
+
+    while(a[i] != '\0' && b[i] != '\0'){
+        ca = a[i];
+        cb = b[i];
+
+        if(ca >= 'a' && ca <= 'z')
+            ca = ca - 'a' + 'A';
+
+        if(cb >= 'a' && cb <= 'z')
+            cb = cb - 'a' + 'A';
+
+        if(ca != cb)
+            return 0;
+
+        i++;
+    }
+
+    return a[i] == '\0' && b[i] == '\0';
+}
+
+int ler_palavra(char *entrada, int i, char *destino){
+    int j = 0;
+
+    while(entrada[i] != ' ' && entrada[i] != '\0' && entrada[i] != '(' && entrada[i] != ')' && entrada[i] != ',' && entrada[i] != ';')
+        destino[j++] = entrada[i++];
+
+    destino[j] = '\0';
+    return i;
+}
+
+int compara_palavra_inicio(char *entrada, int i, char *ref){
+    char palavra[30];
+
+    ler_palavra(entrada, i, palavra);
+    return compara_palavra(palavra, ref);
+}
+
+int ler_tipo_campo(char *entrada, int i, char *tipo){
+    char palavra[30], tamanho[10];
+    int j;
+
+    i = ler_palavra(entrada, i, palavra);
+
+    if(compara_palavra(palavra, "INTEGER"))
+        *tipo = 'I';
+    else if(compara_palavra(palavra, "NUMERIC"))
+        *tipo = 'N';
+    else if(compara_palavra(palavra, "DATE"))
+        *tipo = 'D';
+    else
+        *tipo = 'T';
+
+    if(entrada[i] == '('){
+        i++;
+        j = 0;
+
+        while(entrada[i] != ')' && entrada[i] != '\0')
+            tamanho[j++] = entrada[i++];
+
+        tamanho[j] = '\0';
+
+        if(entrada[i] == ')')
+            i++;
+
+        if(*tipo == 'T' && compara_palavra(tamanho, "1"))
+            *tipo = 'C';
+    }
+    return i;
+}
+
+void processar_create_database(char *entrada, int i, pondb **pdb){ //extrair nome banco
+    char nome[30];
+
+    i = pula_espacos(entrada, i);
+    i = pula_from_where(entrada, i);
+    i = pula_espacos(entrada, i);
+
+    ler_palavra(entrada, i, nome);
+    criar_banco(pdb, nome);
+}
+
+void processar_create_table(char *entrada, int i, pondb *pdb)
 {
+    char nome_tabela[30], nome_campo[30], segmento[100], tipo;
+    int j, depth, k;
+    int fim, fimSegmento;
+    tabela *nt;
+    campos *nc;
+
+    i = pula_espacos(entrada, i);
+    i = pula_from_where(entrada, i);
+    i = pula_espacos(entrada, i);
+
+    i = ler_palavra(entrada, i, nome_tabela);
+
+    nt = inserir_tabela(&pdb->pbanco->ptabelas, nome_tabela);
+
+    i = pula_espacos(entrada, i);
+
+    if(entrada[i] == '(')
+        i++;
+
+    fim = 0;
+
+    while(entrada[i] != '\0' && !fim)
+    {
+        i = pula_espacos(entrada, i);
+
+        if(entrada[i] == ')')
+        {
+            i++;
+            fim = 1;
+        }
+        else
+        {
+            depth = 0;
+            j = 0;
+            fimSegmento = 0;
+
+            while(entrada[i] != '\0' && !fimSegmento)
+            {
+                if(entrada[i] == '(')
+                {
+                    depth++;
+                    segmento[j++] = entrada[i++];
+                }
+                else if(entrada[i] == ')')
+                {
+                    if(depth == 0)
+                        fimSegmento = 1;
+                    else
+                    {
+                        depth--;
+                        segmento[j++] = entrada[i++];
+                    }
+                }
+                else if(entrada[i] == ',' && depth == 0)
+                {
+                    i++;
+                    fimSegmento = 1;
+                }
+                else
+                    segmento[j++] = entrada[i++];
+            }
+
+            segmento[j] = '\0';
+
+            k = pula_espacos(segmento, 0);
+
+            if(compara_palavra_inicio(segmento, k, "CONSTRAINT"))
+            {
+                k = pula_from_where(segmento, k);
+                k = pula_espacos(segmento, k);
+                k = pula_from_where(segmento, k);
+                k = pula_espacos(segmento, k);
+                k = pula_from_where(segmento, k);
+                k = pula_espacos(segmento, k);
+                k = pula_from_where(segmento, k);
+                k = pula_espacos(segmento, k);
+
+                if(segmento[k] == '(')
+                    k++;
+
+                ler_palavra(segmento, k, nome_campo);
+
+                nc = buscar_campo(nt->pcampos, nome_campo);
+
+                if(nc)
+                    nc->pk = 'S';
+            }
+            else
+            {
+                k = ler_palavra(segmento, k, nome_campo);
+                k = pula_espacos(segmento, k);
+                ler_tipo_campo(segmento, k, &tipo);
+
+                inserir_campo(nt, nome_campo, tipo, 'N');
+            }
+        }
+    }
+}
+
+void processar_alter_table(char *entrada, int i, pondb *pdb)
+{
+    char nome_tabela[30], nome_campo[30];
+    char nome_tabela_ref[30], nome_campo_ref[30];
+    tabela *nt, *nt_ref;
+    campos *nc, *nc_ref;
+
+    i = pula_espacos(entrada, i);
+    i = pula_from_where(entrada, i);
+    i = pula_espacos(entrada, i);
+
+    i = ler_palavra(entrada, i, nome_tabela);
+
+    nt = buscar_tabela(pdb->pbanco->ptabelas, nome_tabela);
+
+    i = pula_espacos(entrada, i);
+    i = pula_from_where(entrada, i);
+    i = pula_espacos(entrada, i);
+    i = pula_from_where(entrada, i);
+    i = pula_espacos(entrada, i);
+    i = pula_from_where(entrada, i);
+    i = pula_espacos(entrada, i);
+    i = pula_from_where(entrada, i);
+    i = pula_espacos(entrada, i);
+    i = pula_from_where(entrada, i);
+    i = pula_espacos(entrada, i);
+
+    if(entrada[i] == '(')
+        i++;
+
+    i = ler_palavra(entrada, i, nome_campo);
+
+    if(entrada[i] == ')')
+        i++;
+
+    i = pula_espacos(entrada, i);
+    i = pula_from_where(entrada, i);
+    i = pula_espacos(entrada, i);
+
+    i = ler_palavra(entrada, i, nome_tabela_ref);
+
+    i = pula_espacos(entrada, i);
+
+    if(entrada[i] == '(')
+        i++;
+
+    ler_palavra(entrada, i, nome_campo_ref);
+
+    if(nt)
+        nc = buscar_campo(nt->pcampos, nome_campo);
+    else
+        nc = NULL;
+
+    nt_ref = buscar_tabela(pdb->pbanco->ptabelas, nome_tabela_ref);
+
+    if(nt_ref)
+        nc_ref = buscar_campo(nt_ref->pcampos, nome_campo_ref);
+    else
+        nc_ref = NULL;
+
+    if(nc && nc_ref)
+        nc->fk = nc_ref;
+}
+
+void executar_comando_ddl(char *entrada, pondb **pdb){
+    char comando[30];
+    int i;
+    i = parser_comando(entrada, comando);
+
+    if(isCREATE(comando)){
+        i = pula_espacos(entrada, i);
+        if(isCreateDatabase(entrada, &i))
+            processar_create_database(entrada, i, pdb);
+        else
+            processar_create_table(entrada, i, *pdb);
+    }
+    else if(isALTER(comando)){
+        processar_alter_table(entrada, i, *pdb);
+    }
+}
+
+void abrir_arquivo_script(char *caminho, pondb **pdb){
+    FILE *arq = fopen(caminho, "r");
+    char statement[1000];
+    int j, c, anteriorEspaco;
+    if(arq == NULL){
+    	printf("[!] Erro ao abrir o arquivo");
+    }
+    else{
+    	j = 0;
+	    anteriorEspaco = 1;
+	    c = fgetc(arq);
+	
+	    while(c != EOF){
+	        if(c == ';'){
+	            statement[j] = '\0';
+	            if(j > 0)
+	                executar_comando_ddl(statement, pdb);
+	            j = 0;
+	            anteriorEspaco = 1;
+	        }
+	        else if(c == '\n' || c == '\r' || c == '\t' || c == ' '){
+	            if(!anteriorEspaco && j > 0){
+	                statement[j++] = ' ';
+	                anteriorEspaco = 1;
+	            }
+	        }
+	        else{
+	            statement[j++] = (char)c;
+	            anteriorEspaco = 0;
+	        }
+	        c = fgetc(arq);
+	    }
+	    fclose(arq);	
+    }
+}
+
+int main(void){
     int i;
     char comando[30];
     char entrada[100];
+    char caminho[100];
     fila *f1, *f2, *f3, *f4;
     pondb *pdb;
     inicializa_ponteiro_banco(&pdb);
@@ -524,6 +827,19 @@ int main(void)
     init(&f2);
     init(&f3);
     init(&f4);
+
+    printf("Digite o nome do arquivo de script (deve estar na pasta do projeto): ");
+    fgets(caminho, sizeof(caminho), stdin);
+
+    i = 0;
+    while(caminho[i] != '\n' && caminho[i] != '\0')
+        i++;
+    caminho[i] = '\0';
+
+    abrir_arquivo_script(caminho, &pdb);
+
+    imprimir_banco(pdb);
+
     gets(entrada);
     while(strcmp(entrada, "\0") != 0)
     {
@@ -578,8 +894,10 @@ int main(void)
             parser_delete(entrada, i, &f1, &f2);
             executar_delete(pdb->pbanco->ptabelas,&f1, &f2);
         }
+
+        gets(entrada);
     }
-    
+
 
     return 0;
 }
