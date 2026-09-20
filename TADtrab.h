@@ -48,6 +48,12 @@ struct filap
     struct filap *prox;
 };typedef struct filap fila;
 
+void pula_from_where(char entrada[], int *i);
+void pula_espacos(char entrada[], int *i);
+void ler_palavra(char entrada[], int *i, char palavra[]);
+int verifica_where(campos *campo_w, valorc *valor_w, char entrada[]);
+void remover_valor_campo(campos *campo, valorc *valor);
+
 char isEmpty(fila *f)
 {
     return f == NULL;
@@ -399,23 +405,61 @@ void imprimir_valores(campos *inicio)
     }
 }
 
-/*
-Para o delete e update
-buscar_valor(...)
-remover_valor(...)
-alterar_valor(...)
-*/
-
 
 /*
 executar_insert(...) - Funcao pra extrair os dados do parser e realizar a insercao
 */
+char verificar_pk(campos *campo, char valor[])
+{
+    valorc *aux;
+    int achou=0;
+    aux = campo->Pdados;
+
+    while(aux && !achou)
+    {
+        if(valor_igual(campo, aux, valor))
+            achou=1;
+
+        aux = aux->prox;
+    }
+    if(achou)
+        return 0;
+    return 1;
+}
+
+char verificar_fk(campos *campo, char valor[])
+{
+    valorc *aux;
+    int achou=0;
+    if(campo->fk == NULL)
+        achou = 1;
+    else
+    {
+        aux = campo->fk->Pdados;
+
+        while(aux)
+        {
+            if(valor_igual(campo->fk, aux, valor))
+                achou=1;
+
+            aux = aux->prox;
+        }
+    }
+    if(achou)
+        return 1;
+    return 0;
+}
+
 void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
 {
     char info[20];
     tabela *nt;
     campos *nc;
     valorc *novo, *aux;
+    fila *aux2, *aux3;
+    int valido=1;
+
+
     if(!isEmpty(*f1))
     {
         dequeue(&*f1, info);
@@ -426,46 +470,74 @@ void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
         {
             campos *coluna = nt->pcampos;
 
-            while(!isEmpty(*f2) && !isEmpty(*f3))
-            {
-                dequeue(&*f2, info);
+            aux2 = *f2;
+            aux3 = *f3;
 
-                nc = buscar_campo(coluna, info);
+            while(aux2 && aux3 && valido)
+            {
+                nc = buscar_campo(coluna, aux2->info);
 
                 if(nc)
                 {
-                    dequeue(&*f3, info);
-
-                    novo = criar_valor();
-                    novo->prox = NULL;
-
-                    if(nc->tipo == 'I')
-                        novo->dado.valorI = atoi(info);
-
-                    else if(nc->tipo == 'T')
-                        strcpy(novo->dado.valorT, info);
-
-                    else if(nc->tipo == 'D')
-                        strcpy(novo->dado.valorD, info);
-
-                    else if(nc->tipo == 'N')
-                        novo->dado.valorN = atof(info);
-
-                    else if(nc->tipo == 'C')
-                        novo->dado.valorC = info[0];
-
-                    if(!nc->Patual)
-                        nc->Pdados = nc->Patual = novo;
-                    else
+                    if(nc->pk == 'S' && !verificar_pk(nc, aux3->info))
                     {
-                        aux = nc->Patual;
-
-                        while(aux->prox != NULL)
-                            aux = aux->prox;
-
-                        aux->prox = novo;
+                        printf("Erro: valor de PK ja existe!\n");
+                        valido = 0;
                     }
-                    
+
+                    else if(!verificar_fk(nc, aux3->info))
+                    {
+                        printf("Erro: valor de FK nao existe!\n");
+                        valido = 0;
+                    }
+                }
+
+                aux2 = aux2->prox;
+                aux3 = aux3->prox;
+            }
+
+            if(valido)
+            {
+                while(!isEmpty(*f2) && !isEmpty(*f3))
+                {
+                    dequeue(&*f2, info);
+
+                    nc = buscar_campo(coluna, info);
+
+                    if(nc)
+                    {
+                        dequeue(&*f3, info);
+
+                        novo = criar_valor();
+                        novo->prox = NULL;
+
+                        if(nc->tipo == 'I')
+                            novo->dado.valorI = atoi(info);
+
+                        else if(nc->tipo == 'T')
+                            strcpy(novo->dado.valorT, info);
+
+                        else if(nc->tipo == 'D')
+                            strcpy(novo->dado.valorD, info);
+
+                        else if(nc->tipo == 'N')
+                            novo->dado.valorN = atof(info);
+
+                        else if(nc->tipo == 'C')
+                            novo->dado.valorC = info[0];
+
+                        if(!nc->Patual)
+                            nc->Pdados = nc->Patual = novo;
+                        else
+                        {
+                            aux = nc->Patual;
+
+                            while(aux->prox != NULL)
+                                aux = aux->prox;
+
+                            aux->prox = novo;
+                        }
+                    }
                 }
             }
         }
@@ -517,6 +589,19 @@ int buscar_posicao(campos *inicio, char *operador, char *valor)
     return -1;
 }
 
+valorc *buscar_valor_posicao(campos *inicio, int pos)
+{
+    int i = 0;
+    valorc *aux = inicio->Pdados;
+
+    while(aux && i < pos)
+    {
+        aux = aux->prox;
+        i++;
+    }
+
+    return aux;
+}
 
 
 void parser_where(char *campo, char *operador, char *valor, char *entrada)
@@ -696,49 +781,6 @@ void executar_update(tabela *ptab, fila **f1, fila **f2, fila **f3, fila **f4)
     }
 }
 
-/*
-Resumo do que falta:
-
-INSERT
-└── executar_insert
-validar FK
-validar PK duplicada
-
-Update
- executar_update()
- localizar registros pelo WHERE
- alterar os valores
- validar tipo
- validar FK se o campo alterado for FK
-
-
-
-*/
-/*
-f1 → usuarios
-
-f2 → nome → idade
-
-f3 → Maria Silva → 30
-
-f4 → id_usuario = 1
-*/
-
-
-
-
-
-
-/*
-DELETE
- executar_delete()
- localizar registro pelo WHERE
- remover corretamente os nós de Pdados
- manter os ponteiros consistentes
- decidir/tratar o que acontece ao tentar excluir um registro referenciado por uma FK
-
-
-*/
 void remover_outros_campos(tabela *nt, campos *campo_w, valorc *valor_w) //O aux_w anda ate achar o valor correspondente a linha, pra apagar tudo
 {
     campos *campo;
@@ -821,7 +863,14 @@ void executar_delete(tabela *ptabela, fila **f1, fila **f2)
 
     char nome_tabela[30], campo_where[30], operador[5], valor[30], where[40];
 
-    nt = campo_w = campo = aux_w = ant_w = proximo = aux = ant = NULL;
+    nt = NULL;
+    campo_w = NULL;
+    campo = NULL;
+    aux_w = NULL;
+    ant_w = NULL;
+    proximo = NULL;
+    aux = NULL;
+    ant = NULL;
     
 
     if(!isEmpty(*f1))
@@ -1019,20 +1068,6 @@ void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n, campos *cam
 f2 → tabela do FROM
 f3 → condição do WHERE
 */
-void ler_palavra(char entrada[], int *i, char palavra[])
-{
-    int j = 0;
-
-    *i = pula_espacos(entrada, *i);
-
-    while(entrada[*i] != ' ' && entrada[*i] != '\0' && entrada[*i] != ';')
-    {
-        palavra[j++] = entrada[*i];
-        (*i)++;
-    }
-
-    palavra[j] = '\0';
-}
 
 int verifica_between(campos *campo, valorc *valor, char valor1[], char valor2[])
 {
@@ -1104,7 +1139,7 @@ int verifica_where(campos *campo_w, valorc *valor_w, char entrada[])
                 resultado = compara_valor(campo_w, valor_w, operador, valor1);
         }
 
-        i = pula_espacos(entrada, i);
+        pula_espacos(entrada, &i);
 
         if(entrada[i] != '\0' && entrada[i] != ';' && resultado)
         {
@@ -1842,11 +1877,6 @@ void executar_select_simples(tabela *ptab, fila *f1, fila *f2, fila *f3)
                 }
             }
 
-            if(n > 0)
-            {
-                printf("Tabela: %s\n", nt->nome_tabela);
-                imprimir_tabela_resultado(nt, colunas, n, campo_w, operador, valor_where);
-            }
         }
     }
 }

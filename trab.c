@@ -45,18 +45,16 @@ char isInsert(char comando[])
     return !strcmp(comando, "INSERT") || !strcmp(comando, "insert");
 }
 
-int pula_from_where(char entrada[], int i)
+void pula_from_where(char entrada[], int *i)
 {
-    while(entrada[i] != ' ' && entrada[i] != '\0')
-        i++;
-    return i;
+    while(entrada[*i] != ' ' && entrada[*i] != '\0')
+        (*i)++;
 }
 
-int pula_espacos(char entrada[], int i)
+void pula_espacos(char entrada[], int *i)
 {
-    while(entrada[i] == ' ' && entrada[i] != '\0')
-        i++;
-    return i;
+    while(entrada[*i] == ' ' && entrada[*i] != '\0')
+        (*i)++;
 }
 
 void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
@@ -74,7 +72,7 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
         if(col == 0)
         {
             j = 0;
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             while(entrada[i] != ' ' &&
                   entrada[i] != ',' &&
@@ -89,11 +87,11 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
             if(entrada[i] == ',')
             {
                 i++;
-                i = pula_espacos(entrada, i);
+                pula_espacos(entrada, &i);
             }
             else
             {
-                i = pula_espacos(entrada, i);
+                pula_espacos(entrada, &i);
                 col = 1;
             }
         }
@@ -103,9 +101,9 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
          */
         else if(col == 1)
         {
-            i = pula_espacos(entrada, i);
-            i = pula_from_where(entrada, i);
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
+            pula_from_where(entrada, &i);
+            pula_espacos(entrada, &i);
 
             col = 2;
         }
@@ -128,7 +126,7 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
             palavra[j] = '\0';
             enqueue(f2, palavra);
 
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             /*
              * Tem outra tabela
@@ -136,7 +134,7 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
             if(entrada[i] == ',')
             {
                 i++;
-                i = pula_espacos(entrada, i);
+                pula_espacos(entrada, &i);
             }
 
             /*
@@ -144,8 +142,8 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
              */
             else if(entrada[i] == 'W' || entrada[i] == 'w')
             {
-                i = pula_from_where(entrada, i);
-                i = pula_espacos(entrada, i);
+                pula_from_where(entrada, &i);
+                pula_espacos(entrada, &i);
                 col = 4;
             }
 
@@ -230,7 +228,7 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
             
             enqueue(f3, condicao);
 
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             /*
              * Verifica se existe outro AND
@@ -264,10 +262,10 @@ void parser_delete(char entrada[], int i, fila **f1, fila **f2)
     while(entrada[i] != '\0')
     {
         if(col == 0){
-            i = pula_espacos(entrada, i);
-            i = pula_from_where(entrada, i);
+            pula_espacos(entrada,&i);
+            pula_from_where(entrada, &i);
 
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             while(entrada[i] != ' ' && entrada[i] != '\0')
                 palavra[j++] = entrada[i++];
@@ -278,11 +276,11 @@ void parser_delete(char entrada[], int i, fila **f1, fila **f2)
         }
         else if(col == 1)
         {
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
-            i = pula_from_where(entrada, i);
+            pula_from_where(entrada, &i);
 
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
             //Le a condicao
             j=0;
             while(entrada[i] != ';' && entrada[i] != '\0')
@@ -307,15 +305,15 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
     {
         if(col == 0)
         {
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
             while(entrada[i] != ' ' && entrada[i] != '\0')
                 palavra[j++] = entrada[i++];
             palavra[j] = '\0';
             enqueue(&*f1, palavra);
 
-            i = pula_espacos(entrada, i);
-            i = pula_from_where(entrada, i); /* pula o SET */
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
+            pula_from_where(entrada, &i); /* pula o SET */
+            pula_espacos(entrada, &i);
 
             j = 0;
             col = 1;
@@ -327,12 +325,12 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
             palavra[j] = '\0';
             enqueue(&*f2, palavra);
 
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             if(entrada[i] == '=')
                 i++;
 
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             j = 0;
             while(entrada[i] != ' ' && entrada[i] != ',' && entrada[i] != '\0')
@@ -343,7 +341,7 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
             if(entrada[i] == ',')
             {
                 i++;
-                i = pula_espacos(entrada, i);
+                pula_espacos(entrada, &i);
                 j = 0;
             }
             else
@@ -352,12 +350,12 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
         }
         else if(col == 2)
         {
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             if(entrada[i] == 'W' || entrada[i] == 'w')
             {
-                i = pula_from_where(entrada, i);
-                i = pula_espacos(entrada, i);
+                pula_from_where(entrada, &i);
+                pula_espacos(entrada, &i);
                 j = 0;
                 col = 3;
             }
@@ -392,9 +390,9 @@ void parser_insert(char entrada[], int i, fila **f1, fila **f2, fila **f3)
     {
         if(col == 0)
         {
-            i = pula_espacos(entrada, i);
-            i = pula_from_where(entrada, i); 
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
+            pula_from_where(entrada, &i); 
+            pula_espacos(entrada, &i);
 
             j = 0;
 
@@ -406,7 +404,7 @@ void parser_insert(char entrada[], int i, fila **f1, fila **f2, fila **f3)
             palavra[j] = '\0';
             enqueue(&*f1, palavra);
 
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             if(entrada[i] == '(')
                 i++; 
@@ -417,7 +415,7 @@ void parser_insert(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 
         else if(col == 1)
         {
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             j = 0;
 
@@ -442,9 +440,9 @@ void parser_insert(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 
         else if(col == 2)
         {
-            i = pula_espacos(entrada, i);
-            i = pula_from_where(entrada, i); /* pula VALUES */
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
+            pula_from_where(entrada, &i); /* pula VALUES */
+            pula_espacos(entrada, &i);
 
             if(entrada[i] == '(')
                 i++; 
@@ -455,7 +453,7 @@ void parser_insert(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 
         else if(col == 3)
         {
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             j = 0;
 
@@ -484,7 +482,7 @@ void parser_insert(char entrada[], int i, fila **f1, fila **f2, fila **f3)
                 palavra[j] = '\0';
                 enqueue(&*f3, palavra);
             }
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             if(entrada[i] == ',')
             {
@@ -507,7 +505,7 @@ void parser_insert(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 
 char isCreateDatabase(char entrada[], int *i)
 {
-    *i = pula_espacos(entrada, *i);
+    pula_espacos(entrada, &*i);
     if(entrada[*i] == 'D' || entrada[*i] == 'd')
         return 1;
     return 0;
@@ -536,20 +534,19 @@ int compara_palavra(char *a, char *b){
     return a[i] == '\0' && b[i] == '\0';
 }
 
-int ler_palavra(char *entrada, int i, char *destino){
+void ler_palavra(char *entrada, int *i, char *destino){
     int j = 0;
 
-    while(entrada[i] != ' ' && entrada[i] != '\0' && entrada[i] != '(' && entrada[i] != ')' && entrada[i] != ',' && entrada[i] != ';')
-        destino[j++] = entrada[i++];
+    while(entrada[*i] != ' ' && entrada[*i] != '\0' && entrada[*i] != '(' && entrada[*i] != ')' && entrada[*i] != ',' && entrada[*i] != ';')
+        destino[j++] = entrada[(*i)++];
 
     destino[j] = '\0';
-    return i;
 }
 
 int compara_palavra_inicio(char *entrada, int i, char *ref){
     char palavra[30];
 
-    ler_palavra(entrada, i, palavra);
+    ler_palavra(entrada, &i, palavra);
     return compara_palavra(palavra, ref);
 }
 
@@ -557,7 +554,7 @@ int ler_tipo_campo(char *entrada, int i, char *tipo){
     char palavra[30], tamanho[10];
     int j;
 
-    i = ler_palavra(entrada, i, palavra);
+    ler_palavra(entrada, &i, palavra);
 
     if(compara_palavra(palavra, "INTEGER"))
         *tipo = 'I';
@@ -589,11 +586,11 @@ int ler_tipo_campo(char *entrada, int i, char *tipo){
 void processar_create_database(char *entrada, int i, pondb **pdb){ //extrair nome banco
     char nome[30];
 
-    i = pula_espacos(entrada, i);
-    i = pula_from_where(entrada, i);
-    i = pula_espacos(entrada, i);
+    pula_espacos(entrada, &i);
+    pula_from_where(entrada, &i);
+    pula_espacos(entrada, &i);
 
-    ler_palavra(entrada, i, nome);
+    ler_palavra(entrada, &i, nome);
     criar_banco(pdb, nome);
 }
 
@@ -605,15 +602,15 @@ void processar_create_table(char *entrada, int i, pondb *pdb)
     tabela *nt;
     campos *nc;
 
-    i = pula_espacos(entrada, i);
-    i = pula_from_where(entrada, i);
-    i = pula_espacos(entrada, i);
+    pula_espacos(entrada, &i);
+    pula_from_where(entrada, &i);
+    pula_espacos(entrada, &i);
 
-    i = ler_palavra(entrada, i, nome_tabela);
+    ler_palavra(entrada, &i, nome_tabela);
 
     nt = inserir_tabela(&pdb->pbanco->ptabelas, nome_tabela);
 
-    i = pula_espacos(entrada, i);
+    pula_espacos(entrada, &i);
 
     if(entrada[i] == '(')
         i++;
@@ -622,7 +619,7 @@ void processar_create_table(char *entrada, int i, pondb *pdb)
 
     while(entrada[i] != '\0' && !fim)
     {
-        i = pula_espacos(entrada, i);
+        pula_espacos(entrada, &i);
 
         if(entrada[i] == ')')
         {
@@ -663,23 +660,24 @@ void processar_create_table(char *entrada, int i, pondb *pdb)
 
             segmento[j] = '\0';
 
-            k = pula_espacos(segmento, 0);
+            k = 0;
+            pula_espacos(segmento, &k);
 
             if(compara_palavra_inicio(segmento, k, "CONSTRAINT"))
             {
-                k = pula_from_where(segmento, k);
-                k = pula_espacos(segmento, k);
-                k = pula_from_where(segmento, k);
-                k = pula_espacos(segmento, k);
-                k = pula_from_where(segmento, k);
-                k = pula_espacos(segmento, k);
-                k = pula_from_where(segmento, k);
-                k = pula_espacos(segmento, k);
+                pula_from_where(segmento, &k);
+                pula_espacos(segmento, &k);
+                pula_from_where(segmento, &k);
+                pula_espacos(segmento, &k);
+                pula_from_where(segmento, &k);
+                pula_espacos(segmento, &k);
+                pula_from_where(segmento, &k);
+                pula_espacos(segmento, &k);
 
                 if(segmento[k] == '(')
                     k++;
 
-                ler_palavra(segmento, k, nome_campo);
+                ler_palavra(segmento, &k, nome_campo);
 
                 nc = buscar_campo(nt->pcampos, nome_campo);
 
@@ -688,8 +686,8 @@ void processar_create_table(char *entrada, int i, pondb *pdb)
             }
             else
             {
-                k = ler_palavra(segmento, k, nome_campo);
-                k = pula_espacos(segmento, k);
+                ler_palavra(segmento, &k, nome_campo);
+                pula_espacos(segmento, &k);
                 ler_tipo_campo(segmento, k, &tipo);
 
                 inserir_campo(nt, nome_campo, tipo, 'N');
@@ -705,46 +703,46 @@ void processar_alter_table(char *entrada, int i, pondb *pdb)
     tabela *nt, *nt_ref;
     campos *nc, *nc_ref;
 
-    i = pula_espacos(entrada, i);
-    i = pula_from_where(entrada, i);
-    i = pula_espacos(entrada, i);
+    pula_espacos(entrada, &i);
+    pula_from_where(entrada, &i);
+    pula_espacos(entrada, &i);
 
-    i = ler_palavra(entrada, i, nome_tabela);
+    ler_palavra(entrada, &i, nome_tabela);
 
     nt = buscar_tabela(pdb->pbanco->ptabelas, nome_tabela);
 
-    i = pula_espacos(entrada, i);
-    i = pula_from_where(entrada, i);
-    i = pula_espacos(entrada, i);
-    i = pula_from_where(entrada, i);
-    i = pula_espacos(entrada, i);
-    i = pula_from_where(entrada, i);
-    i = pula_espacos(entrada, i);
-    i = pula_from_where(entrada, i);
-    i = pula_espacos(entrada, i);
-    i = pula_from_where(entrada, i);
-    i = pula_espacos(entrada, i);
+    pula_espacos(entrada, &i);
+    pula_from_where(entrada, &i);
+    pula_espacos(entrada, &i);
+    pula_from_where(entrada, &i);
+    pula_espacos(entrada, &i);
+    pula_from_where(entrada, &i);
+    pula_espacos(entrada, &i);
+    pula_from_where(entrada, &i);
+    pula_espacos(entrada, &i);
+    pula_from_where(entrada, &i);
+    pula_espacos(entrada, &i);
 
     if(entrada[i] == '(')
         i++;
 
-    i = ler_palavra(entrada, i, nome_campo);
+    ler_palavra(entrada, &i, nome_campo);
 
     if(entrada[i] == ')')
         i++;
 
-    i = pula_espacos(entrada, i);
-    i = pula_from_where(entrada, i);
-    i = pula_espacos(entrada, i);
+    pula_espacos(entrada, &i);
+    pula_from_where(entrada, &i);
+    pula_espacos(entrada, &i);
 
-    i = ler_palavra(entrada, i, nome_tabela_ref);
+    ler_palavra(entrada, &i, nome_tabela_ref);
 
-    i = pula_espacos(entrada, i);
+    pula_espacos(entrada, &i);
 
     if(entrada[i] == '(')
         i++;
 
-    ler_palavra(entrada, i, nome_campo_ref);
+    ler_palavra(entrada, &i, nome_campo_ref);
 
     if(nt)
         nc = buscar_campo(nt->pcampos, nome_campo);
@@ -768,7 +766,7 @@ void executar_comando_ddl(char *entrada, pondb **pdb){
     i = parser_comando(entrada, comando);
 
     if(isCREATE(comando)){
-        i = pula_espacos(entrada, i);
+        pula_espacos(entrada, &i);
         if(isCreateDatabase(entrada, &i))
             processar_create_database(entrada, i, pdb);
         else
@@ -846,7 +844,7 @@ int main(void){
         i = parser_comando(entrada, comando);
         if(isCREATE(comando))
         {
-            i = pula_espacos(entrada, i);
+            pula_espacos(entrada, &i);
 
             if(isCreateDatabase(entrada, &i))
             {
@@ -896,8 +894,24 @@ int main(void){
         }
 
         gets(entrada);
+        limpar_filas(&f1, &f2, &f3, &f4);
     }
 
 
     return 0;
 }
+/*
+INTEGRIDADE
+├── PK duplicada                             ❌
+├── FK no INSERT                             ❌
+├── FK no UPDATE                             ❌
+└── FK no DELETE                             ❌
+
+FINALIZAÇÃO
+├── Limpar filas após SELECT                 ❌
+├── Ajustar saída para formato de tabela     🔄
+├── Corrigir Patual após DELETE              🔄
+├── Script final                             🔄
+└── Testes completos                         🔄
+*/
+
