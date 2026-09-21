@@ -746,25 +746,50 @@ void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
 
 void parser_where(char *campo, char *operador, char *valor, char *entrada)
 {
-    int i, j =0;
+    int i = 0, j = 0;
     char palavra[30];
-    for(i=0; entrada[i] != ' '; i++)
-    {
-        palavra[i] = entrada[i];
-    }
-    palavra[i] = '\0';
+
+    pula_espacos(entrada, &i);
+
+    j = 0;
+    while(entrada[i] != ' ' && entrada[i] != '\0')
+        palavra[j++] = entrada[i++];
+
+    palavra[j] = '\0';
     strcpy(campo, palavra);
-    i++;
-    while(entrada[i] != ' ')
-        palavra[j++] = entrada[i++]; 
+
+    pula_espacos(entrada, &i);
+
+    j = 0;
+    while(entrada[i] != ' ' && entrada[i] != '\0')
+        palavra[j++] = entrada[i++];
 
     palavra[j] = '\0';
     strcpy(operador, palavra);
-    i++;
-    j=0;
-    while(entrada[i] != '\0')
-        valor[j++]= entrada[i++];
-    valor[j] = '\0';
+
+    pula_espacos(entrada, &i);
+
+    j = 0;
+
+    if(entrada[i] == 39)
+    {
+        i++;
+
+        while(entrada[i] != 39 && entrada[i] != '\0')
+            valor[j++] = entrada[i++];
+
+        valor[j] = '\0';
+
+        if(entrada[i] == 39)
+            i++;
+    }
+    else
+    {
+        while(entrada[i] != '\0')
+            valor[j++] = entrada[i++];
+
+        valor[j] = '\0';
+    }
 }
 
 int compara_valor(campos *campo, valorc *aux, char *operador, char *valor)
