@@ -850,7 +850,7 @@ int main(void){
     init(&f4);
 
     printf("Digite o nome do arquivo de script (deve estar na pasta do projeto): ");
-
+    gets(caminho);
     abrir_arquivo_script(caminho, &pdb);
 
     imprimir_banco(pdb);
