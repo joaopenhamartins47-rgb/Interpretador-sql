@@ -329,6 +329,7 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
         {
             while(entrada[i] != ' ' && entrada[i] != '=' && entrada[i] != '\0')
                 palavra[j++] = entrada[i++];
+
             palavra[j] = '\0';
             enqueue(&*f2, palavra);
 
@@ -340,9 +341,27 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
             pula_espacos(entrada, &i);
 
             j = 0;
-            while(entrada[i] != ' ' && entrada[i] != ',' && entrada[i] != '\0')
-                palavra[j++] = entrada[i++];
-            palavra[j] = '\0';
+
+            if(entrada[i] == 39)
+            {
+                i++;
+
+                while(entrada[i] != 39 && entrada[i] != '\0')
+                    palavra[j++] = entrada[i++];
+
+                palavra[j] = '\0';
+
+                if(entrada[i] == 39)
+                    i++;
+            }
+            else
+            {
+                while(entrada[i] != ' ' && entrada[i] != ',' && entrada[i] != '\0')
+                    palavra[j++] = entrada[i++];
+
+                palavra[j] = '\0';
+            }
+
             enqueue(&*f3, palavra);
 
             if(entrada[i] == ',')
@@ -353,8 +372,8 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
             }
             else
                 col = 2;
-            
         }
+            
         else if(col == 2)
         {
             pula_espacos(entrada, &i);
@@ -380,9 +399,7 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
             col = 4;
         }
         else
-        {
             i++;
-        }
     }
 }
 
