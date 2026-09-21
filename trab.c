@@ -837,7 +837,8 @@ void abrir_arquivo_script(char *caminho, pondb **pdb){
     if(arq == NULL){
     	printf("[!] Erro ao abrir o arquivo");
     }
-    else{
+    else
+    {
     	j = 0;
 	    anteriorEspaco = 1;
 	    c = fgetc(arq);
@@ -850,7 +851,8 @@ void abrir_arquivo_script(char *caminho, pondb **pdb){
 	            j = 0;
 	            anteriorEspaco = 1;
 	        }
-	        else if(c == '\n' || c == '\r' || c == '\t' || c == ' '){
+	        else if(c == '\n' || c == '\r' || c == '\t' || c == ' ')
+            {
 	            if(!anteriorEspaco && j > 0){
 	                statement[j++] = ' ';
 	                anteriorEspaco = 1;
@@ -868,7 +870,8 @@ void abrir_arquivo_script(char *caminho, pondb **pdb){
 
 
 
-int main(void){
+int main(void)
+{
     int i;
     char comando[30];
     char entrada[500];

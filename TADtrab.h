@@ -53,11 +53,9 @@ void ler_palavra(char entrada[], int *i, char destino[]);
 int valor_igual(campos *campo, valorc *aux, char *valor);
 char verificar_fk_delete(tabela *ptab, campos *campo, valorc *valor);
 int verifica_where(campos *campo_w, valorc *valor_w, char entrada[]);
-
+void imprimir_valor(campos *campo, valorc *valor);
 valorc *buscar_valor_linha(campos *campo, campos *campo_base,valorc *linha);
-
 void remover_valor_campo(campos *campo, valorc *valor);
-
 int valores_iguais_join(campos *campo1, valorc *valor1, campos *campo2, valorc *valor2);
 
 char isEmpty(fila *f)
@@ -1290,7 +1288,6 @@ void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n, fila *condi
 
     imprimir_borda(n);
 
-    printf("|");
 
     for(j = 0; j < n; j++)
         printf(" %-25s |", colunas[j]->campo);
