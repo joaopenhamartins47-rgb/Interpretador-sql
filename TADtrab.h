@@ -48,7 +48,16 @@ struct filap
     struct filap *prox;
 };typedef struct filap fila;
 
+void pula_espacos(char entrada[], int *i);
+void ler_palavra(char entrada[], int *i, char destino[]);
 
+int verifica_where(campos *campo_w, valorc *valor_w, char entrada[]);
+
+valorc *buscar_valor_linha(campos *campo, campos *campo_base,valorc *linha);
+
+void remover_valor_campo(campos *campo, valorc *valor);
+
+int valores_iguais_join(campos *campo1, valorc *valor1, campos *campo2, valorc *valor2);
 
 char isEmpty(fila *f)
 {
