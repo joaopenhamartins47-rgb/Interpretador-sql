@@ -50,7 +50,8 @@ struct filap
 
 void pula_espacos(char entrada[], int *i);
 void ler_palavra(char entrada[], int *i, char destino[]);
-
+int valor_igual(campos *campo, valorc *aux, char *valor);
+char verificar_fk_delete(tabela *ptab, campos *campo, valorc *valor);
 int verifica_where(campos *campo_w, valorc *valor_w, char entrada[]);
 
 valorc *buscar_valor_linha(campos *campo, campos *campo_base,valorc *linha);
