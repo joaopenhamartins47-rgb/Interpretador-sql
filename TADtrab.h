@@ -444,7 +444,6 @@ void imprimir_valores(campos *inicio)
 
 
 /*
-executar_insert(...) - Funcao pra extrair os dados do parser e realizar a insercao
 */
 int contar_pk(campos *inicio)
 {
@@ -1410,6 +1409,7 @@ int verifica_between(campos *campo, valorc *valor, char valor1[], char valor2[])
 int verifica_where(campos *campo_w, valorc *valor_w, char entrada[])
 {
     int i = 0, resultado = 1;
+    int j;
     char campo[30], operador[10], valor1[30], valor2[30], palavra[20];
 
     while(entrada[i] != '\0' && entrada[i] != ';' && resultado)
@@ -1424,13 +1424,44 @@ int verifica_where(campos *campo_w, valorc *valor_w, char entrada[])
 
         if(strcmp(operador, "BETWEEN") == 0 || strcmp(operador, "between") == 0)
         {
-            ler_palavra(entrada, &i, valor1);
+            j = 0;
+
+            if(entrada[i] == 39)
+            {
+                i++;
+
+                while(entrada[i] != 39 && entrada[i] != '\0')
+                    valor1[j++] = entrada[i++];
+
+                valor1[j] = '\0';
+
+                if(entrada[i] == 39)
+                    i++;
+            }
+            else
+                ler_palavra(entrada, &i, valor1);
 
             pula_espacos(entrada, &i);
             ler_palavra(entrada, &i, palavra);
 
             pula_espacos(entrada, &i);
-            ler_palavra(entrada, &i, valor2);
+
+            j = 0;
+
+            if(entrada[i] == 39)
+            {
+                i++;
+
+                while(entrada[i] != 39 && entrada[i] != '\0')
+                    valor2[j++] = entrada[i++];
+
+                valor2[j] = '\0';
+
+                if(entrada[i] == 39)
+                    i++;
+            }
+            else
+                ler_palavra(entrada, &i, valor2);
 
             if(strcmp(palavra, "AND") == 0 || strcmp(palavra, "and") == 0)
                 resultado = verifica_between(campo_w, valor_w, valor1, valor2);
@@ -1439,7 +1470,22 @@ int verifica_where(campos *campo_w, valorc *valor_w, char entrada[])
         }
         else
         {
-            ler_palavra(entrada, &i, valor1);
+            j = 0;
+
+            if(entrada[i] == 39)
+            {
+                i++;
+
+                while(entrada[i] != 39 && entrada[i] != '\0')
+                    valor1[j++] = entrada[i++];
+
+                valor1[j] = '\0';
+
+                if(entrada[i] == 39)
+                    i++;
+            }
+            else
+                ler_palavra(entrada, &i, valor1);
 
             if(strcmp(operador, "=") == 0)
                 resultado = valor_igual(campo_w, valor_w, valor1);
@@ -1905,18 +1951,11 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
     valorc *linha1, *linha2, *linha3, *linha4;
     fila *aux_f1;
 
-    t1 = NULL;
-    t2 = NULL;
-    t3 = NULL;
-    t4 = NULL;
+    t1 = t2 = t3 = t4 = NULL;
 
     base1 = base2 = base3 = base4 = NULL;
-    
     linha1 = linha2 = linha3 = linha4 = NULL;
 
-    /*
-     * Pega todas as tabelas da f2.
-     */
     if(!isEmpty(f2))
     {
         dequeue_select(&f2, info);
@@ -1956,9 +1995,7 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
     if(t1 && t2)
         imprimir_cabecalho_join(f1, t1, t2, t3, t4);
 
-    /*
-     * JOIN com 2 tabelas
-     */
+    /* JOIN com 2 tabelas */
     if(t1 && t2 && !t3)
     {
         linha1 = base1->Pdados;
@@ -1969,11 +2006,7 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
 
             while(linha2)
             {
-                if(verifica_condicoes_join(f3,
-                                           t1, linha1,
-                                           t2, linha2,
-                                           NULL, NULL,
-                                           NULL, NULL))
+                if(verifica_condicoes_join(f3, t1, linha1, t2, linha2, NULL, NULL, NULL, NULL))
                 {
                     aux_f1 = f1;
 
@@ -2007,9 +2040,7 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
         }
     }
 
-    /*
-     * JOIN com 3 tabelas
-     */
+    /* JOIN com 3 tabelas */
     else if(t1 && t2 && t3 && !t4)
     {
         linha1 = base1->Pdados;
@@ -2066,9 +2097,7 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
         }
     }
 
-    /*
-     * JOIN com 4 tabelas
-     */
+    /* JOIN com 4 tabelas */
     else if(t1 && t2 && t3 && t4)
     {
         linha1 = base1->Pdados;
@@ -2133,6 +2162,9 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
             linha1 = linha1->prox;
         }
     }
+
+    if(t1 && t2)
+        imprimir_borda_join(contar_colunas_join(f1, t1, t2, t3, t4));
 }
 
 

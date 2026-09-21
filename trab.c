@@ -558,11 +558,27 @@ int compara_palavra(char *a, char *b){
     return a[i] == '\0' && b[i] == '\0';
 }
 
-void ler_palavra(char *entrada, int *i, char *destino){
+void ler_palavra(char *entrada, int *i, char *destino)
+{
     int j = 0;
 
-    while(entrada[*i] != ' ' && entrada[*i] != '\0' && entrada[*i] != '(' && entrada[*i] != ')' && entrada[*i] != ',' && entrada[*i] != ';')
+    if(entrada[*i] == 39)
+    {
         destino[j++] = entrada[(*i)++];
+
+        while(entrada[*i] != 39 && entrada[*i] != '\0')
+            destino[j++] = entrada[(*i)++];
+
+        if(entrada[*i] == 39)
+            destino[j++] = entrada[(*i)++];
+    }
+    else
+    {
+        while(entrada[*i] != '\0' && entrada[*i] != ' ' && entrada[*i] != '(' && entrada[*i] != ')' && entrada[*i] != ',' && entrada[*i] != ';')
+        {
+            destino[j++] = entrada[(*i)++];
+        }
+    }
 
     destino[j] = '\0';
 }
