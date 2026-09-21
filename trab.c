@@ -830,8 +830,7 @@ void executar_comando_ddl(char *entrada, pondb **pdb){
     }
 }
 
-void abrir_arquivo_script(char *caminho, pondb **pdb){
-    FILE *arq = fopen(caminho, "r");
+void abrir_arquivo_script(FILE *arq, char *caminho, pondb **pdb){
     char statement[1000];
     int j, c, anteriorEspaco;
     if(arq == NULL){
@@ -884,10 +883,23 @@ int main(void)
     init(&f2);
     init(&f3);
     init(&f4);
+    FILE *arq = NULL;
 
-    printf("Digite o nome do arquivo de script (deve estar na pasta do projeto): ");
-    gets(caminho);
-    abrir_arquivo_script(caminho, &pdb);
+    do
+    {
+        printf("Digite o nome do arquivo de script (deve estar na pasta do projeto): ");
+        gets(caminho);
+        arq = fopen(caminho, "r");
+        if(arq == NULL)
+        {
+            printf("Erro ao abrir arquivo, digite novamente!\n");
+        }
+        else
+            abrir_arquivo_script(arq, caminho, &pdb);
+
+    } while (arq == NULL);
+    
+    
 
     imprimir_banco(pdb);
 
