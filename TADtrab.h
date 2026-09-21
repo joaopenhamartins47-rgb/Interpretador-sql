@@ -672,8 +672,7 @@ void executar_insert(tabela *ptab, fila **f1, fila **f2, fila **f3)
                             valido = 0;
                         }
                     }
-                    else if(nc->pk == 'S' && qtd_pk > 1)
-                        aux = NULL;
+                    
 
                     if(valido && !verificar_fk(nc, aux3->info))
                     {
