@@ -363,7 +363,7 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
             }
 
             enqueue(&*f3, palavra);
-
+            pula_espacos(entrada, &i);
             if(entrada[i] == ',')
             {
                 i++;
@@ -889,7 +889,7 @@ int main(void){
     imprimir_banco(pdb);
 
     gets(entrada);
-    while(entrada[0] != '\0')
+    while(strcmp(entrada, "\0") != 0)
     {
         i = parser_comando(entrada, comando);
 

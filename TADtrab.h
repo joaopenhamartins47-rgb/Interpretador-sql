@@ -569,12 +569,32 @@ char verificar_pk_composta(tabela *nt, fila *f2, fila *f3)
     return 1;
 }
 
+int valores_iguais(campos *campo, valorc *valor1, valorc *valor2)
+{
+    if(campo->tipo == 'I')
+        return valor1->dado.valorI == valor2->dado.valorI;
+
+    else if(campo->tipo == 'N')
+        return valor1->dado.valorN == valor2->dado.valorN;
+
+    else if(campo->tipo == 'D')
+        return strcmp(valor1->dado.valorD, valor2->dado.valorD) == 0;
+
+    else if(campo->tipo == 'T')
+        return strcmp(valor1->dado.valorT, valor2->dado.valorT) == 0;
+
+    else if(campo->tipo == 'C')
+        return valor1->dado.valorC == valor2->dado.valorC;
+
+    return 0;
+}
+
 char verificar_pk_update_composta(tabela *nt, valorc *linha_atual, campos *campo_alterado, char valor[])
 {
     campos *campo;
     valorc *linha;
     valorc *valor_linha;
-    char valor_comparacao[50];
+    valorc *valor_atual;
     char igual;
 
     linha = nt->pcampos->Pdados;
@@ -593,30 +613,17 @@ char verificar_pk_update_composta(tabela *nt, valorc *linha_atual, campos *campo
                     valor_linha = buscar_valor_linha(campo, nt->pcampos, linha);
 
                     if(campo == campo_alterado)
-                        strcpy(valor_comparacao, valor);
+                    {
+                        if(!valor_linha || !valor_igual(campo, valor_linha, valor))
+                            igual = 0;
+                    }
                     else
                     {
-                        valor_comparacao[0] = '\0';
-                        if(valor_linha)
-                        {
-                            if(campo->tipo == 'I')
-                                sprintf(valor_comparacao, "%d", valor_linha->dado.valorI);
-                            else if(campo->tipo == 'N')
-                                sprintf(valor_comparacao, "%f", valor_linha->dado.valorN);
-                            else if(campo->tipo == 'D')
-                                strcpy(valor_comparacao, valor_linha->dado.valorD);
-                            else if(campo->tipo == 'T')
-                                strcpy(valor_comparacao, valor_linha->dado.valorT);
-                            else if(campo->tipo == 'C')
-                                valor_comparacao[0] = valor_linha->dado.valorC,
-                                valor_comparacao[1] = '\0';
-                        }
-                    }
+                        valor_atual = buscar_valor_linha(campo, nt->pcampos, linha_atual);
 
-                    if(!valor_linha || !valor_igual(campo,
-                                                    valor_linha,
-                                                    valor_comparacao))
-                        igual = 0;
+                        if(!valor_linha || !valor_atual || !valores_iguais(campo, valor_linha, valor_atual))
+                            igual = 0;
+                    }
                 }
 
                 campo = campo->prox;
@@ -1221,7 +1228,7 @@ void cor_padrao(void)
     textcolor(LIGHTGRAY);
 }
 
-void imprimir_borda(int largura[], int n)
+void imprimir_borda(int n)
 {
     int j, k;
 
@@ -1229,34 +1236,14 @@ void imprimir_borda(int largura[], int n)
     {
         printf("+");
 
-        for(k = 0; k < largura[j] + 2; k++)
+        for(k = 0; k < 27; k++)
             printf("-");
     }
 
     printf("+\n");
 }
 
-void formatar_valor(campos *campo, valorc *v, char *destino){
-    if(!v)
-        strcpy(destino, "");
-    else
-    {
-        if(campo->tipo == 'I')
-            sprintf(destino, "%d", v->dado.valorI);
 
-        else if(campo->tipo == 'N')
-            sprintf(destino, "%.2f", v->dado.valorN);
-
-        else if(campo->tipo == 'D')
-            sprintf(destino, "%s", v->dado.valorD);
-
-        else if(campo->tipo == 'T')
-            sprintf(destino, "%s", v->dado.valorT);
-
-        else if(campo->tipo == 'C')
-            sprintf(destino, "%c", v->dado.valorC);
-    }
-}
 
 int linha_atende_where(tabela *nt, fila *condicoes, valorc *linha)
 {
@@ -1293,49 +1280,24 @@ int linha_atende_where(tabela *nt, fila *condicoes, valorc *linha)
     return resultado;
 }
 
-void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n,
-                               fila *condicoes)
+void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n, fila *condicoes)
 {
-    int largura[30];
     int j;
-    char valor_str[30];
     valorc *ref;
     valorc *valor;
 
-    for(j = 0; j < n; j++)
-        largura[j] = strlen(colunas[j]->campo);
-
-    ref = nt->pcampos->Pdados;
-
-    while(ref)
-    {
-        if(linha_atende_where(nt, condicoes, ref))
-        {
-            for(j = 0; j < n; j++)
-            {
-                valor = buscar_valor_linha(colunas[j], nt->pcampos, ref);
-                formatar_valor(colunas[j], valor, valor_str);
-
-                if((int)strlen(valor_str) > largura[j])
-                    largura[j] = strlen(valor_str);
-            }
-        }
-
-        ref = ref->prox;
-    }
-
     cor_ciano();
 
-    imprimir_borda(largura, n);
+    imprimir_borda(n);
 
     printf("|");
 
     for(j = 0; j < n; j++)
-        printf(" %-*s |", largura[j], colunas[j]->campo);
+        printf(" %-25s |", colunas[j]->campo);
 
     printf("\n");
 
-    imprimir_borda(largura, n);
+    imprimir_borda(n);
 
     ref = nt->pcampos->Pdados;
 
@@ -1348,8 +1310,9 @@ void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n,
             for(j = 0; j < n; j++)
             {
                 valor = buscar_valor_linha(colunas[j], nt->pcampos, ref);
-                formatar_valor(colunas[j], valor, valor_str);
-                printf(" %-*s |", largura[j], valor_str);
+
+                if(valor)
+                    imprimir_valor(colunas[j], valor);
             }
 
             printf("\n");
@@ -1358,11 +1321,10 @@ void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n,
         ref = ref->prox;
     }
 
-    imprimir_borda(largura, n);
+    imprimir_borda(n);
 
     cor_padrao();
 }
-
 /*f1 → colunas que o usuário pediu
 f2 → tabela do FROM
 f3 → condição do WHERE
@@ -1724,8 +1686,7 @@ int verifica_condicao_join(char entrada[],
             if(valor1 && valor2)
             {
                 if(strcmp(operador, "=") == 0)
-                    resultado = valores_iguais_join(cp1, valor1,
-                                                    cp2, valor2);
+                    resultado = valores_iguais_join(cp1, valor1, cp2, valor2);
             }
         }
     }
@@ -1734,11 +1695,7 @@ int verifica_condicao_join(char entrada[],
 }
 
 //Verificar todas as condicoes de f3
-int verifica_condicoes_join(fila *f3,
-                            tabela *t1, valorc *linha1,
-                            tabela *t2, valorc *linha2,
-                            tabela *t3, valorc *linha3,
-                            tabela *t4, valorc *linha4)
+int verifica_condicoes_join(fila *f3, tabela *t1, valorc *linha1, tabela *t2, valorc *linha2, tabela *t3, valorc *linha3, tabela *t4, valorc *linha4)
 {
     int resultado = 1;
     char condicao[100];
@@ -1750,11 +1707,7 @@ int verifica_condicoes_join(fila *f3,
     {
         strcpy(condicao, aux->info);
 
-        resultado = verifica_condicao_join(condicao,
-                                           t1, linha1,
-                                           t2, linha2,
-                                           t3, linha3,
-                                           t4, linha4);
+        resultado = verifica_condicao_join(condicao, t1, linha1, t2, linha2, t3, linha3, t4, linha4);
 
         aux = aux->prox;
     }
@@ -2073,11 +2026,7 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
                             }
                             else
                             {
-                                imprimir_campo_join(aux_f1->info,
-                                                    t1, linha1,
-                                                    t2, linha2,
-                                                    t3, linha3,
-                                                    NULL, NULL);
+                                imprimir_campo_join(aux_f1->info, t1, linha1, t2, linha2, t3, linha3, NULL, NULL);
 
                                 aux_f1 = aux_f1->prox;
                             }
@@ -2115,11 +2064,7 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
 
                     while(linha4)
                     {
-                        if(verifica_condicoes_join(f3,
-                                                   t1, linha1,
-                                                   t2, linha2,
-                                                   t3, linha3,
-                                                   t4, linha4))
+                        if(verifica_condicoes_join(f3, t1, linha1, t2, linha2, t3, linha3, t4, linha4))
                         {
                             aux_f1 = f1;
 
@@ -2136,11 +2081,7 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
                                 }
                                 else
                                 {
-                                    imprimir_campo_join(aux_f1->info,
-                                                        t1, linha1,
-                                                        t2, linha2,
-                                                        t3, linha3,
-                                                        t4, linha4);
+                                    imprimir_campo_join(aux_f1->info, t1, linha1, t2, linha2, t3, linha3, t4, linha4);
 
                                     aux_f1 = aux_f1->prox;
                                 }
