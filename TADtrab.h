@@ -114,6 +114,46 @@ void limpar_filas(fila **f1, fila **f2, fila **f3, fila **f4)
     limpar_fila(f4);
 }
 
+void limpar_banco(pondb **pdb)
+{
+    tabela *tb, *prox_tb;
+    campos *campo, *prox_campo;
+    valorc *valor, *prox_valor;
+
+    if(*pdb)
+    {
+        tb = (*pdb)->pbanco->ptabelas;
+
+        while(tb)
+        {
+            prox_tb = tb->prox;
+            campo = tb->pcampos;
+
+            while(campo)
+            {
+                prox_campo = campo->prox;
+                valor = campo->Pdados;
+
+                while(valor)
+                {
+                    prox_valor = valor->prox;
+                    free(valor);
+                    valor = prox_valor;
+                }
+
+                free(campo);
+                campo = prox_campo;
+            }
+
+            free(tb);
+            tb = prox_tb;
+        }
+
+        free((*pdb)->pbanco);
+        free(*pdb);
+        *pdb = NULL;
+    }
+}
 
 
 void inicializa_ponteiro_banco(pondb **inicio)

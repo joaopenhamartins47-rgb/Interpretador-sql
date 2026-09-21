@@ -890,6 +890,7 @@ int main(void){
     }
 
     limpar_filas(&f1, &f2, &f3, &f4);
+    limpar_banco(&pdb);
 
     return 0;
 }
