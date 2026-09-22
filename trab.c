@@ -2258,7 +2258,6 @@ int main(void)
         gets(entrada);
     }
 
-    limpar_filas(&f1, &f2, &f3, &f4);
     limpar_banco(&pdb);
 
     return 0;
