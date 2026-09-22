@@ -1,0 +1,70 @@
+-- ========================================================================
+-- SCRIPT DE TESTES - DML E DQL (Base db_oficina)
+-- Padrão formatado exatamente para o parser do Trabalho Bimestral
+-- ========================================================================
+
+-- ------------------------------------------------------------------------
+-- 1. INSERT (Preenchendo todas as colunas para alinhamento das listas)
+-- ------------------------------------------------------------------------
+
+INSERT INTO veiculo (id_veiculo, marca, modelo, dono, placa, combustivel, ano, chassi) VALUES (1, 'Chevrolet', 'Onix', 'Joao', 'ABC-1234', 'G', 2018, 'CH111');
+INSERT INTO veiculo (id_veiculo, marca, modelo, dono, placa, combustivel, ano, chassi) VALUES (2, 'Fiat', 'Argo', 'Ana', 'XYZ-9876', 'F', 2020, 'CH222');
+INSERT INTO veiculo (id_veiculo, marca, modelo, dono, placa, combustivel, ano, chassi) VALUES (3, 'Honda', 'Civic', 'Pedro', 'DEF-5678', 'G', 2010, 'CH333');
+
+INSERT INTO peca (id_peca, descricao, valor, estoque) VALUES (1, 'Filtro_de_Ar', 45.50, 10);
+INSERT INTO peca (id_peca, descricao, valor, estoque) VALUES (2, 'Bateria', 350.00, 5);
+
+INSERT INTO servico (id_servico, descricao, valor) VALUES (1, 'Troca_de_Oleo', 120.00);
+
+INSERT INTO ordem_servico (id_os, id_veiculo, km_entrada, data_entrada, hora_entrada, data_saida, hora_saida, valor_total) VALUES (1, 1, 45000, '2026-09-22', '08:00', '2026-09-22', '17:00', 515.50);
+
+INSERT INTO os_peca (id_os, id_peca, quantidade, valor) VALUES (1, 1, 1, 45.50);
+INSERT INTO os_peca (id_os, id_peca, quantidade, valor) VALUES (1, 2, 1, 350.00);
+
+INSERT INTO os_servico (id_os, id_servico, valor) VALUES (1, 1, 120.00);
+
+
+-- ------------------------------------------------------------------------
+-- 2. SELECT (Exemplos do PDF: Simples, Colunas, BETWEEN e JOIN)
+-- ------------------------------------------------------------------------
+
+SELECT * FROM veiculo;
+
+SELECT modelo, placa, dono FROM veiculo;
+
+SELECT * FROM veiculo WHERE ano BETWEEN 2015 AND 2020;
+
+SELECT ordem_servico.id_os, veiculo.modelo, peca.descricao FROM ordem_servico, veiculo, os_peca, peca WHERE ordem_servico.id_veiculo = veiculo.id_veiculo AND ordem_servico.id_os = os_peca.id_os AND os_peca.id_peca = peca.id_peca;
+
+
+-- ------------------------------------------------------------------------
+-- 3. UPDATE (Condição simples e múltipla alteração no SET)
+-- ------------------------------------------------------------------------
+
+-- Atualizando mais de um campo de uma vez, usando apenas uma condição (PK)
+UPDATE veiculo SET dono = 'Carlos', combustivel = 'A' WHERE id_veiculo = 1;
+
+-- Atualizando apenas um campo
+UPDATE peca SET estoque = 8 WHERE id_peca = 1;
+
+-- Verificando os updates
+SELECT * FROM veiculo;
+SELECT * FROM peca;
+
+
+-- ------------------------------------------------------------------------
+-- 4. DELETE (Condição simples)
+-- ------------------------------------------------------------------------
+
+-- Se tentar deletar o veículo 1 direto, dará o erro correto de chave estrangeira,
+-- pois ele está amarrado à ordem_servico (id_os = 1).
+-- Para demonstrar a deleção funcionando perfeitamente, vamos deletar o veículo 3 
+-- (que não tem ordens de serviço atreladas).
+
+DELETE FROM veiculo WHERE id_veiculo = 3;
+
+DELETE FROM os_peca WHERE id_peca = 2;
+DELETE FROM peca WHERE id_peca = 2;
+
+SELECT * FROM veiculo;
+SELECT * FROM peca;
