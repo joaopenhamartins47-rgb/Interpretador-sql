@@ -369,7 +369,7 @@ void remover_valor_campo(campos *campo, valorc *valor)
     }
 }
 
-void remover_outros_campos(tabela *nt, campos *campo_w, valorc *valor_w) //O aux_w anda ate achar o valor correspondente a linha, pra apagar tudo
+void remover_outros_campos(tabela *nt, campos *campo_w, valorc *valor_w) 
 {
     campos *campo;
     valorc *aux_w;

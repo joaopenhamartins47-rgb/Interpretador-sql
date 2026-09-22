@@ -4,6 +4,10 @@
 #include <conio2.h>
 #include "TADtrab.h"
 
+/*
+Andressa Diniz
+Joao Vitor Penha
+*/
 
 char verificar_pk_composta(tabela *nt, fila *f2, fila *f3);
 void ler_palavra(char *entrada, int *i, char *destino);
@@ -90,9 +94,7 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 
     while(entrada[i] != '\0')
     {
-        /*
-         * COLUNAS DO SELECT
-         */
+        
         if(col == 0)
         {
             j = 0;
@@ -133,10 +135,7 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
         {
             j = 0;
 
-            while(entrada[i] != ' ' &&
-                  entrada[i] != ',' &&
-                  entrada[i] != ';' &&
-                  entrada[i] != '\0')
+            while(entrada[i] != '\0' && entrada[i] != ' ' && entrada[i] != ',' && entrada[i] != ';')
             {
                 palavra[j++] = entrada[i++];
             }
@@ -158,15 +157,15 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
             {
                 pula_from_where(entrada, &i);
                 pula_espacos(entrada, &i);
-                col = 4;
+                col = 3;
             }
 
             else
-                col = 5;
+                col = 4;
         }
 
        
-        else if(col == 4)
+        else if(col == 3)
         {
             j = 0;
             k = 0;
@@ -193,8 +192,7 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
             pula_espacos(entrada, &i);
 
            
-            if(strcmp(operador, "BETWEEN") == 0 ||
-               strcmp(operador, "between") == 0)
+            if(strcmp(operador, "BETWEEN") == 0 || strcmp(operador, "between") == 0)
             {
                 condicao[k++] = ' ';
 
@@ -250,13 +248,13 @@ void parser_select(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 
                 if(strcmp(palavra, "AND") == 0 || strcmp(palavra, "and") == 0)
                 {
-                    col = 4;
+                    col = 3;
                 }
                 else
-                    col = 5;
+                    col = 4;
             }
             else
-                col = 5;
+                col = 4;
         }
 
         else
@@ -309,7 +307,6 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
 {
     int j = 0, col = 0;
     char palavra[50];
-    //f1 eh a tabela que sera alterada, f2 sao os campos, f3 os valores e f4 where
 
     while(entrada[i] != '\0')
     {
@@ -322,7 +319,7 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
             enqueue(&*f1, palavra);
 
             pula_espacos(entrada, &i);
-            pula_from_where(entrada, &i); /* pula o SET */
+            pula_from_where(entrada, &i); 
             pula_espacos(entrada, &i);
 
             j = 0;
@@ -410,7 +407,6 @@ void parser_update(char entrada[], int i, fila **f1, fila **f2, fila **f3, fila 
 void parser_insert(char entrada[], int i, fila **f1, fila **f2, fila **f3)
 {
     int j = 0, col = 0;
-    //f1 vai ser a tabela, f2 as colunas e f3 os valores
     char palavra[50];
 
     while(entrada[i] != '\0')
@@ -468,7 +464,7 @@ void parser_insert(char entrada[], int i, fila **f1, fila **f2, fila **f3)
         else if(col == 2)
         {
             pula_espacos(entrada, &i);
-            pula_from_where(entrada, &i); /* pula VALUES */
+            pula_from_where(entrada, &i); 
             pula_espacos(entrada, &i);
 
             if(entrada[i] == '(')
@@ -818,10 +814,7 @@ void executar_update(tabela *ptab, fila **f1, fila **f2, fila **f3, fila **f4)
                                     }
                                     else if(qtd_pk > 1)
                                     {
-                                        if(!verificar_pk_update_composta(nt,
-                                                                         linha_atual,
-                                                                         nc,
-                                                                         valor))
+                                        if(!verificar_pk_update_composta(nt, linha_atual, nc, valor))
                                         {
                                             printf("Erro: chave primaria composta ja existe!\n");
                                             valido = 0;
@@ -1026,7 +1019,6 @@ void imprimir_tabela_join(tabela *t, valorc *linha)
     }
 }
 
-//Verificar uma condicao do join
 int verifica_condicao_join(char entrada[], tabela *t1, valorc *linha1, tabela *t2, valorc *linha2, tabela *t3, valorc *linha3, tabela *t4, valorc *linha4)
 {
     int resultado = 0;
@@ -1067,7 +1059,6 @@ int verifica_condicao_join(char entrada[], tabela *t1, valorc *linha1, tabela *t
     return resultado;
 }
 
-//Verificar todas as condicoes de f3
 int verifica_condicoes_join(fila *f3, tabela *t1, valorc *linha1, tabela *t2, valorc *linha2, tabela *t3, valorc *linha3, tabela *t4, valorc *linha4)
 {
     int resultado = 1;
@@ -1103,11 +1094,7 @@ void imprimir_campo_join(char entrada[], tabela *t1, valorc *linha1, tabela *t2,
     {
         campo = buscar_campo(t->pcampos, nome_campo);
 
-        linha = buscar_linha_tabela(nome_tabela,
-                                    t1, linha1,
-                                    t2, linha2,
-                                    t3, linha3,
-                                    t4, linha4);
+        linha = buscar_linha_tabela(nome_tabela, t1, linha1, t2, linha2, t3, linha3, t4, linha4);
 
         if(campo && linha)
         {
@@ -1351,7 +1338,6 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
         }
     }
 
-    /* JOIN com 3 tabelas */
     else if(t1 && t2 && t3 && !t4)
     {
         linha1 = base1->Pdados;
@@ -1400,7 +1386,6 @@ void executar_select_join(tabela *ptab, fila *f1, fila *f2, fila *f3)
         }
     }
 
-    /* JOIN com 4 tabelas */
     else if(t1 && t2 && t3 && t4)
     {
         linha1 = base1->Pdados;
@@ -1576,10 +1561,7 @@ void imprimir_tabela_resultado(tabela *nt, campos *colunas[], int n, fila *condi
 
     cor_padrao();
 }
-/*f1 → colunas que o usuário pediu
-f2 → tabela do FROM
-f3 → condição do WHERE
-*/
+
 
 int verifica_between(campos *campo, valorc *valor, char valor1[], char valor2[])
 {
